@@ -1,301 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yard2Site Tracker</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
-  <script src="https://unpkg.com/html5-qrcode@2.3.6/html5-qrcode.min.js"></script>
-  <style>
-    body { padding: 20px; }
-    .hidden { display: none; }
-    .table-container { overflow-x: auto; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yard2Site Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.6/html5-qrcode.min.js"></script>
+<style>
+body { padding:20px; }
+.hidden { display: none; }
+.table-container { overflow-x:auto; }
+</style>
 </head>
 <body>
-  <h1 class="title">Yard2Site Tracker</h1>
-  <h2 class="subtitle">Internal material tracking system</h2>
+<h1 class="title">Yard2Site Tracker</h1>
+<h2 class="subtitle">Internal material tracking system</h2>
 
-  <!-- Login Section -->
-  <div id="login">
-    <h2 class="title is-4">Login</h2>
+<!-- Login -->
+<div id="login">
+  <h2 class="title is-4">Login</h2>
+  <div class="field">
+    <label class="label">Username</label>
+    <div class="control">
+      <input id="username" class="input" type="text">
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">PIN</label>
+    <div class="control">
+      <input id="pin" class="input" type="password">
+    </div>
+  </div>
+  <button class="button is-primary" onclick="login()">Login</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="hidden">
+  <div class="tabs is-boxed">
+    <ul id="nav-tabs"></ul>
+  </div>
+
+  <div id="inventory" class="tab-section">
+    <h2 class="title is-4">Inventory</h2>
+    <div class="field">
+      <label class="label">Location</label>
+      <div class="control">
+        <div class="select">
+          <select id="locationFilter" onchange="loadInventory()">
+            <option value="">All</option>
+          </select>
+        </div>
+        <label class="checkbox" style="margin-left:10px;">
+          <input type="checkbox" id="hideZero" onchange="toggleZero()"> Hide zero stock
+        </label>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="table is-striped is-fullwidth">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Size</th>
+            <th>Qty</th>
+            <th>Location</th>
+            <th>Acquired</th>
+            <th>Cost (€)</th>
+            <th>Rented</th>
+            <th>Rental start</th>
+            <th>Rate/day (€)</th>
+            <th>Rental cost (€)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryBody"></tbody>
+        <tfoot>
+          <tr>
+            <th colspan="9">Total</th>
+            <th id="totalValue">0</th>
+            <th></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div id="addItem" class="tab-section hidden">
+    <h2 class="title is-4">Add Item</h2>
+    <div class="field">
+      <label class="label">Name</label>
+      <input id="newName" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Size</label>
+      <input id="newSize" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Quantity</label>
+      <input id="newQuantity" class="input" type="number">
+    </div>
+    <div class="field">
+      <label class="label">Location</label>
+      <div class="select">
+        <select id="newSite"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">Acquisition Date</label>
+      <input id="newDate" class="input" type="date">
+    </div>
+    <div class="field">
+      <label class="label">Acquisition Cost (€)</label>
+      <input id="newCost" class="input" type="number">
+    </div>
+    <div class="field">
+      <label class="checkbox">
+        <input type="checkbox" id="newRented" onchange="toggleRentalFields()"> Rented?
+      </label>
+    </div>
+    <div class="field rental-fields hidden">
+      <label class="label">Rental Start Date</label>
+      <input id="newRentalStart" class="input" type="date">
+    </div>
+    <div class="field rental-fields hidden">
+      <label class="label">Rental Rate per Day (€)</label>
+      <input id="newRate" class="input" type="number" step="0.01">
+    </div>
+    <button class="button is-primary" onclick="addItem()">Add</button>
+  </div>
+
+  <div id="request" class="tab-section hidden">
+    <h2 class="title is-4">Request Delivery</h2>
+    <div class="field">
+      <label class="label">Item</label>
+      <input id="reqItem" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Quantity</label>
+      <input id="reqQty" class="input" type="number">
+    </div>
+    <div class="field">
+      <label class="label">Delivery Date</label>
+      <input id="reqDate" class="input" type="date">
+    </div>
+    <button class="button is-primary" onclick="requestItem()">Request</button>
+  </div>
+
+  <div id="scan" class="tab-section hidden">
+    <h2 class="title is-4">Scan</h2>
+    <div id="qr-reader" style="width:300px;"></div>
+    <p id="qr-result"></p>
+    <button class="button is-info" onclick="startScanner()">Start Scan</button>
+    <button class="button is-warning" onclick="stopScanner()">Stop Scan</button>
+  </div>
+
+  <div id="locations" class="tab-section hidden">
+    <h2 class="title is-4">Locations</h2>
+    <div class="table-container">
+      <table class="table is-striped is-fullwidth">
+        <thead>
+          <tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="locationsBody"></tbody>
+      </table>
+    </div>
+    <h3 class="title is-5">Add Location</h3>
+    <div class="field">
+      <label class="label">Name</label>
+      <input id="siteName" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Address</label>
+      <input id="siteAddress" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Foreman</label>
+      <input id="siteForeman" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Phone</label>
+      <input id="sitePhone" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Email</label>
+      <input id="siteEmail" class="input" type="email">
+    </div>
+    <button class="button is-primary" onclick="addSite()">Add Location</button>
+  </div>
+
+  <div id="users" class="tab-section hidden">
+    <h2 class="title is-4">Users</h2>
+    <div class="table-container">
+      <table class="table is-striped is-fullwidth">
+        <thead>
+          <tr><th>Username</th><th>Role</th><th>Site</th><th>Phone</th><th>Email</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+    <h3 class="title is-5">Add User</h3>
     <div class="field">
       <label class="label">Username</label>
-      <div class="control">
-        <input class="input" id="username" placeholder="Enter username">
-      </div>
+      <input id="userName" class="input" type="text">
     </div>
     <div class="field">
       <label class="label">PIN</label>
-      <div class="control">
-        <input class="input" id="pin" type="password" placeholder="Enter PIN">
+      <input id="userPin" class="input" type="password">
+    </div>
+    <div class="field">
+      <label class="label">Role</label>
+      <div class="select">
+        <select id="userRole">
+          <option value="foreman">Foreman</option>
+          <option value="driver">Driver</option>
+          <option value="yard">Yard</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
     </div>
-    <button class="button is-primary" onclick="login()">Login</button>
+    <div class="field">
+      <label class="label">Site</label>
+      <div class="select">
+        <select id="userSite"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">Phone</label>
+      <input id="userPhone" class="input" type="text">
+    </div>
+    <div class="field">
+      <label class="label">Email</label>
+      <input id="userEmail" class="input" type="email">
+    </div>
+    <button class="button is-primary" onclick="addUser()">Add User</button>
   </div>
-
-  <!-- Dashboard Section -->
-  <div id="dashboard" class="hidden">
-    <h2 class="title is-4">Dashboard</h2>
-    <div class="tabs">
-      <ul id="navTabs"></ul>
-    </div>
-
-    <!-- Inventory Tab -->
-    <div id="inventoryTab" class="tab-content">
-      <div class="field">
-        <label class="checkbox">
-          <input type="checkbox" id="hideZeroCheckbox" onchange="toggleHideZero()"> Hide zero stock
-        </label>
-      </div>
-      <div class="table-container">
-        <table class="table is-striped is-fullwidth">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Size</th>
-              <th>Quantity</th>
-              <th>Site</th>
-              <th>Acquired</th>
-              <th>Cost (€)</th>
-              <th>Rented</th>
-              <th>Rental Start</th>
-              <th>Rate (€/day)</th>
-              <th>Rental Cost (€)</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="inventoryTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Add Item Tab -->
-    <div id="addItemTab" class="tab-content hidden">
-      <h3 class="title is-5">Add Item</h3>
-      <div class="field">
-        <label class="label">Name</label>
-        <div class="control">
-          <input class="input" id="itemName">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Size/Model</label>
-        <div class="control">
-          <input class="input" id="itemSize">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Quantity</label>
-        <div class="control">
-          <input class="input" type="number" id="itemQty">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Site</label>
-        <div class="control">
-          <div class="select is-fullwidth">
-            <select id="itemSiteSelect"></select>
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Acquisition Date</label>
-        <div class="control">
-          <input class="input" type="date" id="itemAcqDate">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Acquisition Cost (€)</label>
-        <div class="control">
-          <input class="input" type="number" step="0.01" id="itemAcqCost">
-        </div>
-      </div>
-      <div class="field">
-        <label class="checkbox">
-          <input type="checkbox" id="itemIsRented" onchange="toggleRentalFields()"> Rented
-        </label>
-      </div>
-      <div class="field" id="rentalStartField" style="display:none">
-        <label class="label">Rental Start Date</label>
-        <div class="control">
-          <input class="input" type="date" id="itemRentalStart">
-        </div>
-      </div>
-      <div class="field" id="rentalRateField" style="display:none">
-        <label class="label">Rental Rate (€/day)</label>
-        <div class="control">
-          <input class="input" type="number" step="0.01" id="itemRentalRate">
-        </div>
-      </div>
-      <button class="button is-primary" onclick="addItem()">Add Item</button>
-    </div>
-
-    <!-- Request Tab -->
-    <div id="requestTab" class="tab-content hidden">
-      <h3 class="title is-5">Request Delivery</h3>
-      <div class="field">
-        <label class="label">Item Name</label>
-        <div class="control">
-          <input class="input" id="requestItemName" placeholder="Enter item name">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Quantity</label>
-        <div class="control">
-          <input class="input" type="number" id="requestQty">
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Need By Date</label>
-        <div class="control">
-          <input class="input" type="date" id="requestDate">
-        </div>
-      </div>
-      <button class="button is-primary" onclick="requestDelivery()">Submit Request</button>
-    </div>
-
-    <!-- Scan Tab -->
-    <div id="scanTab" class="tab-content hidden">
-      <h3 class="title is-5">Scan Item</h3>
-      <div id="qr-reader" style="width:300px"></div>
-      <p id="qr-result"></p>
-      <button class="button is-primary" onclick="startScanner()">Start Scan</button>
-      <button class="button is-danger" onclick="stopScanner()">Stop Scan</button>
-    </div>
-
-    <!-- Sites Tab -->
-    <div id="sitesTab" class="tab-content hidden">
-      <h3 class="title is-5">Locations</h3>
-      <div class="table-container">
-        <table class="table is-striped is-fullwidth">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Address</th>
-              <th>Foreman</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="sitesTableBody"></tbody>
-        </table>
-      </div>
-      <h4 class="title is-6">Add Location</h4>
-      <div class="field">
-        <label class="label">Name</label>
-        <div class="control"><input class="input" id="newSiteName"></div>
-      </div>
-      <div class="field">
-        <label class="label">Address</label>
-        <div class="control"><input class="input" id="newSiteAddress"></div>
-      </div>
-      <div class="field">
-        <label class="label">Foreman</label>
-        <div class="control"><input class="input" id="newSiteForeman"></div>
-      </div>
-      <div class="field">
-        <label class="label">Phone</label>
-        <div class="control"><input class="input" id="newSitePhone"></div>
-      </div>
-      <div class="field">
-        <label class="label">Email</label>
-        <div class="control"><input class="input" id="newSiteEmail"></div>
-      </div>
-      <button class="button is-primary" onclick="addSite()">Add Location</button>
-    </div>
-
-    <!-- Users Tab -->
-    <div id="usersTab" class="tab-content hidden">
-      <h3 class="title is-5">User Management</h3>
-      <div class="table-container">
-        <table class="table is-striped is-fullwidth">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Location</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody"></tbody>
-        </table>
-      </div>
-      <h4 class="title is-6">Add User</h4>
-      <div class="field">
-        <label class="label">Username</label>
-        <div class="control"><input class="input" id="newUsername"></div>
-      </div>
-      <div class="field">
-        <label class="label">PIN</label>
-        <div class="control"><input class="input" id="newPin" type="password"></div>
-      </div>
-      <div class="field">
-        <label class="label">Role</label>
-        <div class="control">
-          <div class="select">
-            <select id="newRole">
-              <option value="foreman">Foreman</option>
-              <option value="driver">Driver</option>
-              <option value="yard">Yard</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Location</label>
-        <div class="control">
-          <div class="select is-fullwidth"><select id="newLocationSelect"></select></div>
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Phone</label>
-        <div class="control"><input class="input" id="newPhone"></div>
-      </div>
-      <div class="field">
-        <label class="label">Email</label>
-        <div class="control"><input class="input" id="newEmail"></div>
-      </div>
-      <button class="button is-primary" onclick="addUser()">Add User</button>
-    </div>
-  </div>
+</div>
 
 <script>
-// Default data for locations, users, inventory
 const defaultSites = [
-  { name:'Main Yard', address:'123 Yard Rd, Dublin', foreman:'John Doe', phone:'0123456789', email:'john@yard.com' },
-  { name:'Yard 2', address:'456 Site St, Dublin', foreman:'Michael Smith', phone:'0871111111', email:'michael@yard2site.com' },
-  { name:'Bennett Lucan Site', address:'Lucan, Dublin', foreman:'Nony', phone:'0862222222', email:'nony@lucan.com' },
-  { name:'Dublin Hegarty Site', address:'Dublin City', foreman:'Maria Kelly', phone:'0853333333', email:'maria@hegarty.com' }
+  {name:'Main Yard', address:'123 Main Rd, Dublin', foreman:'John Smith', phone:'0123456789', email:'john@yard2site.com'},
+  {name:'Yard 2', address:'456 Second St, Dublin', foreman:'Alice Jones', phone:'0987654321', email:'alice@yard2site.com'},
+  {name:'Bennett Lucan Site', address:'Lucan, Co. Dublin', foreman:'Michael Bennett', phone:'0871112222', email:'michael@bennett.com'},
+  {name:'Dublin Hegarty Site', address:'Dublin City', foreman:'Sarah Hegarty', phone:'0863334444', email:'sarah@hegarty.com'}
 ];
-
 const defaultUsers = [
-  { username:'admin', pin:'1234', role:'admin', location:'Main Yard', phone:'0000000000', email:'admin@yard.com' },
-  { username:'foreman1', pin:'1111', role:'foreman', location:'Bennett Lucan Site', phone:'0861111111', email:'foreman1@lucan.com' },
-  { username:'driver1', pin:'2222', role:'driver', location:'Main Yard', phone:'0852222222', email:'driver1@yard.com' },
-  { username:'yard1', pin:'3333', role:'yard', location:'Yard 2', phone:'0873333333', email:'yard1@yard2site.com' }
+  {username:'admin', pin:'1234', role:'admin', site:'Main Yard', phone:'0123456789', email:'admin@yard2site.com'},
+  {username:'nony', pin:'1111', role:'foreman', site:'Bennett Lucan Site', phone:'0850000000', email:'nony@site.com'}
 ];
-
 const defaultInventory = [
-  { name:'Doka Frami panel', size:'90x150', quantity:20, site:'Main Yard', acquisitionDate:'2025-01-10', acquisitionCost:100, isRented:false, rentalStartDate:'', rentalRate:0 },
-  { name:'Doka Frami panel', size:'90x120', quantity:0, site:'Main Yard', acquisitionDate:'2025-02-15', acquisitionCost:90, isRented:false, rentalStartDate:'', rentalRate:0 },
-  { name:'Doka Frami panel', size:'90x90', quantity:5, site:'Yard 2', acquisitionDate:'2025-03-01', acquisitionCost:80, isRented:false, rentalStartDate:'', rentalRate:0 },
-  { name:'Peri TRIO panel', size:'240x120', quantity:10, site:'Bennett Lucan Site', acquisitionDate:'2025-04-05', acquisitionCost:150, isRented:true, rentalStartDate:'2025-10-15', rentalRate:12 },
-  { name:'Doka H20 beam', size:'3.9m', quantity:15, site:'Main Yard', acquisitionDate:'2025-05-20', acquisitionCost:40, isRented:false, rentalStartDate:'', rentalRate:0 },
-  { name:'Doka H20 beam', size:'4.5m', quantity:0, site:'Dublin Hegarty Site', acquisitionDate:'2025-06-01', acquisitionCost:50, isRented:true, rentalStartDate:'2025-10-20', rentalRate:8 },
-  { name:'Prop P3', size:'2.5-3m', quantity:40, site:'Bennett Lucan Site', acquisitionDate:'2025-07-10', acquisitionCost:25, isRented:false, rentalStartDate:'', rentalRate:0 },
-  { name:'Prop P4', size:'3-4m', quantity:0, site:'Dublin Hegarty Site', acquisitionDate:'', acquisitionCost:0, isRented:false, rentalStartDate:'', rentalRate:0 }
+  {name:'Doka Frami panel', size:'90x150', quantity:20, site:'Main Yard', acquisitionDate:'2025-01-10', acquisitionCost:100, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Doka Frami panel', size:'90x120', quantity:0, site:'Main Yard', acquisitionDate:'2025-02-15', acquisitionCost:90, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Doka Frami panel', size:'90x90', quantity:5, site:'Yard 2', acquisitionDate:'2025-03-01', acquisitionCost:80, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Peri TRIO panel', size:'240x120', quantity:10, site:'Bennett Lucan Site', acquisitionDate:'2025-04-05', acquisitionCost:150, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Doka H20 beam', size:'3.9m', quantity:15, site:'Main Yard', acquisitionDate:'2025-05-20', acquisitionCost:40, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Doka H20 beam', size:'4.5m', quantity:0, site:'Dublin Hegarty Site', acquisitionDate:'2025-06-01', acquisitionCost:50, isRented:true, rentalStartDate:'2025-06-15', rentalRate:2},
+  {name:'Prop P3', size:'2.5-3m', quantity:40, site:'Bennett Lucan Site', acquisitionDate:'2025-07-10', acquisitionCost:25, isRented:false, rentalStartDate:'', rentalRate:0},
+  {name:'Prop P4', size:'3-4m', quantity:0, site:'Dublin Hegarty Site', acquisitionDate:'2025-08-01', acquisitionCost:30, isRented:false, rentalStartDate:'', rentalRate:0}
 ];
-
 let sites = JSON.parse(localStorage.getItem('sites')) || defaultSites;
 let users = JSON.parse(localStorage.getItem('users')) || defaultUsers;
 let inventory = JSON.parse(localStorage.getItem('inventory')) || defaultInventory;
 let currentUser = null;
-let hideZero = false;
 let scanner = null;
 
 function saveData() {
@@ -304,237 +268,185 @@ function saveData() {
   localStorage.setItem('inventory', JSON.stringify(inventory));
 }
 
+function buildNavTabs() {
+  const nav = document.getElementById('nav-tabs');
+  nav.innerHTML = '';
+  const tabs = ['inventory','addItem','request','scan','locations','users'];
+  tabs.forEach(tab => {
+    if ((tab === 'locations' || tab === 'users') && currentUser.role !== 'admin') return;
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+    a.href = '#';
+    a.onclick = () => showTab(tab);
+    li.appendChild(a);
+    nav.appendChild(li);
+  });
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-section').forEach(div => div.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+}
+
+function populateSiteOptions() {
+  const locFilter = document.getElementById('locationFilter');
+  const newSiteSelect = document.getElementById('newSite');
+  const userSiteSelect = document.getElementById('userSite');
+  locFilter.innerHTML = '<option value="">All</option>';
+  newSiteSelect.innerHTML = '';
+  userSiteSelect.innerHTML = '';
+  sites.forEach(s => {
+    const opt1 = document.createElement('option');
+    opt1.value = s.name;
+    opt1.textContent = s.name;
+    locFilter.appendChild(opt1);
+    const opt2 = opt1.cloneNode(true);
+    newSiteSelect.appendChild(opt2);
+    const opt3 = opt1.cloneNode(true);
+    userSiteSelect.appendChild(opt3);
+  });
+}
+
 function login() {
   const u = document.getElementById('username').value;
   const p = document.getElementById('pin').value;
-  const found = users.find(uObj => uObj.username === u && uObj.pin === p);
+  const found = users.find(user => user.username === u && user.pin === p);
   if (found) {
     currentUser = found;
     document.getElementById('login').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
     buildNavTabs();
-    loadInventory();
-    loadUsers();
-    loadSites();
     populateSiteOptions();
+    loadInventory();
+    loadSites();
+    loadUsers();
   } else {
     alert('Invalid credentials');
   }
 }
 
-function buildNavTabs() {
-  const nav = document.getElementById('navTabs');
-  nav.innerHTML = '';
-  const tabs = [ {id:'inventoryTab', label:'Inventory'}, {id:'addItemTab', label:'AddItem'}, {id:'requestTab', label:'Request'}, {id:'scanTab', label:'Scan'} ];
-  if (currentUser.role === 'admin') {
-    tabs.push({id:'sitesTab', label:'Locations'});
-    tabs.push({id:'usersTab', label:'Users'});
-  }
-  tabs.forEach((tab, idx) => {
-    const li = document.createElement('li');
-    const a = document.createElement('a');
-    a.textContent = tab.label;
-    a.onclick = () => showTab(tab.id);
-    li.appendChild(a);
-    if (idx === 0) li.classList.add('is-active');
-    nav.appendChild(li);
-  });
-  showTab(tabs[0].id);
-}
-
-function showTab(id) {
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-  const navLinks = document.querySelectorAll('#navTabs li');
-  navLinks.forEach(li => li.classList.remove('is-active'));
-  const order = {'inventoryTab':0, 'addItemTab':1, 'requestTab':2, 'scanTab':3, 'sitesTab':4, 'usersTab':5};
-  const idx = order[id];
-  if (navLinks[idx]) navLinks[idx].classList.add('is-active');
-  if (id !== 'scanTab') stopScanner();
+function toggleZero() {
+  loadInventory();
 }
 
 function loadInventory() {
-  const tbody = document.getElementById('inventoryTableBody');
+  const tbody = document.getElementById('inventoryBody');
   tbody.innerHTML = '';
-  inventory.forEach((item, idx) => {
+  const location = document.getElementById('locationFilter').value;
+  const hideZero = document.getElementById('hideZero').checked;
+  let total = 0;
+  inventory.forEach((item, index) => {
+    if (location && item.site !== location) return;
     if (hideZero && item.quantity == 0) return;
+    const rentalCost = item.isRented && item.rentalStartDate ? ((Date.now() - new Date(item.rentalStartDate)) / (1000*3600*24)) * item.rentalRate : 0;
+    total += item.quantity * item.acquisitionCost + rentalCost;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${item.name}</td><td>${item.size || ''}</td><td>${item.quantity}</td><td>${item.site}</td><td>${item.acquisitionDate || ''}</td><td>${item.acquisitionCost || 0}</td><td>${item.isRented?'Yes':'No'}</td><td>${item.rentalStartDate || ''}</td><td>${item.rentalRate || 0}</td><td>${calculateRentalCost(item)}</td><td><button class="button is-small is-danger" onclick="removeItem(${idx})">Remove</button></td>`;
+    tr.innerHTML = `<td>${item.name}</td>
+      <td>${item.size}</td>
+      <td>${item.quantity}</td>
+      <td>${item.site}</td>
+      <td>${item.acquisitionDate}</td>
+      <td>${item.acquisitionCost}</td>
+      <td>${item.isRented ? 'Yes' : 'No'}</td>
+      <td>${item.rentalStartDate || ''}</td>
+      <td>${item.rentalRate || ''}</td>
+      <td>${rentalCost.toFixed(2)}</td>
+      <td><button class="button is-small is-danger" onclick="removeInventory(${index})">Remove</button></td>`;
     tbody.appendChild(tr);
   });
+  document.getElementById('totalValue').textContent = total.toFixed(2);
 }
 
-function calculateRentalCost(item) {
-  if (item.isRented && item.rentalStartDate && item.rentalRate) {
-    const start = new Date(item.rentalStartDate);
-    const now = new Date();
-    const days = Math.floor((now - start)/(1000*60*60*24));
-    return (days * item.rentalRate).toFixed(2);
-  }
-  return '0.00';
-}
-
-function toggleHideZero() {
-  hideZero = document.getElementById('hideZeroCheckbox').checked;
-  loadInventory();
-}
-
-function toggleRentalFields() {
-  const rented = document.getElementById('itemIsRented').checked;
-  document.getElementById('rentalStartField').style.display = rented ? 'block' : 'none';
-  document.getElementById('rentalRateField').style.display = rented ? 'block' : 'none';
-}
-
-function populateSiteOptions() {
-  const siteSelect = document.getElementById('itemSiteSelect');
-  siteSelect.innerHTML = '';
-  sites.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.name;
-    opt.textContent = s.name;
-    siteSelect.appendChild(opt);
-  });
-  const locSelect = document.getElementById('newLocationSelect');
-  locSelect.innerHTML = '';
-  sites.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.name;
-    opt.textContent = s.name;
-    locSelect.appendChild(opt);
-  });
-}
-
-function addItem() {
-  const name = document.getElementById('itemName').value;
-  const size = document.getElementById('itemSize').value;
-  const qty = parseInt(document.getElementById('itemQty').value) || 0;
-  const site = document.getElementById('itemSiteSelect').value;
-  const acqDate = document.getElementById('itemAcqDate').value;
-  const acqCost = parseFloat(document.getElementById('itemAcqCost').value) || 0;
-  const isRented = document.getElementById('itemIsRented').checked;
-  const rentalStart = document.getElementById('itemRentalStart').value;
-  const rentalRate = parseFloat(document.getElementById('itemRentalRate').value) || 0;
-  if (!name) { alert('Name is required'); return; }
-  inventory.push({ name:name, size:size, quantity:qty, site:site, acquisitionDate:acqDate, acquisitionCost:acqCost, isRented:isRented, rentalStartDate:isRented?rentalStart:'', rentalRate:isRented?rentalRate:0 });
-  saveData();
-  loadInventory();
-  // clear fields
-  document.getElementById('itemName').value='';
-  document.getElementById('itemSize').value='';
-  document.getElementById('itemQty').value='';
-  document.getElementById('itemAcqDate').value='';
-  document.getElementById('itemAcqCost').value='';
-  document.getElementById('itemIsRented').checked=false;
-  document.getElementById('itemRentalStart').value='';
-  document.getElementById('itemRentalRate').value='';
-  toggleRentalFields();
-}
-
-function removeItem(index) {
-  if (confirm('Remove this item?')) {
-    inventory.splice(index,1);
+function removeInventory(index) {
+  if (confirm('Remove item?')) {
+    inventory.splice(index, 1);
     saveData();
     loadInventory();
   }
 }
 
-function requestDelivery() {
-  const itemName = document.getElementById('requestItemName').value;
-  const qty = document.getElementById('requestQty').value;
-  const date = document.getElementById('requestDate').value;
-  if (!itemName || !qty || !date) { alert('Fill all fields'); return; }
-  alert('Delivery request submitted for '+qty+' x '+itemName+' on '+date);
-  document.getElementById('requestItemName').value='';
-  document.getElementById('requestQty').value='';
-  document.getElementById('requestDate').value='';
-}
-
-function loadUsers() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  const tbody = document.getElementById('usersTableBody');
-  tbody.innerHTML='';
-  users.forEach((user, idx) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${user.username}</td><td>${user.role}</td><td>${user.location||''}</td><td>${user.phone||''}</td><td>${user.email||''}</td><td><button class="button is-small is-info" onclick="editUser(${idx})">Edit</button> <button class="button is-small is-danger" onclick="removeUser(${idx})">Remove</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function addUser() {
-  const username = document.getElementById('newUsername').value;
-  const pin = document.getElementById('newPin').value;
-  const role = document.getElementById('newRole').value;
-  const loc = document.getElementById('newLocationSelect').value;
-  const phone = document.getElementById('newPhone').value;
-  const email = document.getElementById('newEmail').value;
-  if (!username || !pin) { alert('Username and PIN required'); return; }
-  users.push({ username:username, pin:pin, role:role, location:loc, phone:phone, email:email });
+function addItem() {
+  const name = document.getElementById('newName').value;
+  const size = document.getElementById('newSize').value;
+  const qty = parseInt(document.getElementById('newQuantity').value || '0');
+  const site = document.getElementById('newSite').value;
+  const date = document.getElementById('newDate').value;
+  const cost = parseFloat(document.getElementById('newCost').value || '0');
+  const rented = document.getElementById('newRented').checked;
+  const rentalStart = document.getElementById('newRentalStart').value;
+  const rate = parseFloat(document.getElementById('newRate').value || '0');
+  if (!name || !size || !site) { alert('Please fill required fields'); return; }
+  inventory.push({name, size, quantity: qty, site, acquisitionDate: date, acquisitionCost: cost, isRented: rented, rentalStartDate: rentalStart, rentalRate: rate});
   saveData();
-  loadUsers();
-  document.getElementById('newUsername').value='';
-  document.getElementById('newPin').value='';
-  document.getElementById('newPhone').value='';
-  document.getElementById('newEmail').value='';
-  document.getElementById('newRole').value='foreman';
+  loadInventory();
 }
 
-function editUser(index) {
-  const user = users[index];
-  const newPin = prompt('Enter new PIN for '+user.username, user.pin);
-  if (newPin === null) return;
-  const newRole = prompt('Enter new role (foreman, driver, yard, admin)', user.role);
-  if (newRole === null) return;
-  const newLoc = prompt('Enter new location', user.location);
-  if (newLoc === null) return;
-  const newPhone = prompt('Enter new phone', user.phone);
-  if (newPhone === null) return;
-  const newEmail = prompt('Enter new email', user.email);
-  if (newEmail === null) return;
-  users[index] = { username:user.username, pin:newPin, role:newRole, location:newLoc, phone:newPhone, email:newEmail };
-  saveData();
-  loadUsers();
+function toggleRentalFields() {
+  document.querySelectorAll('.rental-fields').forEach(div => div.classList.toggle('hidden', !document.getElementById('newRented').checked));
 }
 
-function removeUser(index) {
-  if (confirm('Remove user?')) {
-    users.splice(index,1);
-    saveData();
-    loadUsers();
-  }
+function requestItem() {
+  const item = document.getElementById('reqItem').value;
+  const qty = document.getElementById('reqQty').value;
+  const date = document.getElementById('reqDate').value;
+  alert('Request submitted for '+qty+' x '+item+' on '+date);
+}
+
+function startScanner() {
+  document.getElementById('qr-result').textContent = '';
+  if (!scanner) scanner = new Html5Qrcode('qr-reader');
+  scanner.start({facingMode:'environment'}, {fps:10, qrbox:250},
+    decodedText => {
+      document.getElementById('qr-result').textContent = 'Scanned: '+decodedText;
+      scanner.stop();
+    },
+    error => { console.log(error); }
+  ).catch(err => { console.log(err); });
+}
+
+function stopScanner() {
+  if (scanner) scanner.stop().catch(err => console.log(err));
 }
 
 function loadSites() {
-  if (!currentUser || currentUser.role !== 'admin') return;
-  const tbody = document.getElementById('sitesTableBody');
-  tbody.innerHTML='';
-  sites.forEach((site, idx) => {
+  const tbody = document.getElementById('locationsBody');
+  tbody.innerHTML = '';
+  sites.forEach((site, index) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${site.name}</td><td>${site.address}</td><td>${site.foreman}</td><td>${site.phone}</td><td>${site.email}</td><td><button class="button is-small is-info" onclick="editSite(${idx})">Edit</button> <button class="button is-small is-danger" onclick="removeSite(${idx})">Remove</button></td>`;
+    tr.innerHTML = `<td><a href="#" onclick="viewInventory('${site.name}')">${site.name}</a></td>
+      <td>${site.address}</td>
+      <td>${site.foreman}</td>
+      <td>${site.phone}</td>
+      <td>${site.email}</td>
+      <td><button class="button is-small" onclick="editSite(${index})">Edit</button>
+          <button class="button is-small is-danger" onclick="removeSite(${index})">Remove</button></td>`;
     tbody.appendChild(tr);
   });
 }
 
+function viewInventory(siteName) {
+  document.getElementById('locationFilter').value = siteName;
+  showTab('inventory');
+  loadInventory();
+}
+
 function addSite() {
-  const name = document.getElementById('newSiteName').value;
-  const address = document.getElementById('newSiteAddress').value;
-  const foreman = document.getElementById('newSiteForeman').value;
-  const phone = document.getElementById('newSitePhone').value;
-  const email = document.getElementById('newSiteEmail').value;
+  const name = document.getElementById('siteName').value;
+  const address = document.getElementById('siteAddress').value;
+  const foreman = document.getElementById('siteForeman').value;
+  const phone = document.getElementById('sitePhone').value;
+  const email = document.getElementById('siteEmail').value;
   if (!name) { alert('Name required'); return; }
-  sites.push({ name:name, address:address, foreman:foreman, phone:phone, email:email });
+  sites.push({name, address, foreman, phone, email});
   saveData();
-  loadSites();
   populateSiteOptions();
-  document.getElementById('newSiteName').value='';
-  document.getElementById('newSiteAddress').value='';
-  document.getElementById('newSiteForeman').value='';
-  document.getElementById('newSitePhone').value='';
-  document.getElementById('newSiteEmail').value='';
+  loadSites();
 }
 
 function editSite(index) {
   const site = sites[index];
-  const newName = prompt('Enter new site name', site.name);
+  const newName = prompt('Enter new name', site.name);
   if (newName === null) return;
   const newAddress = prompt('Enter new address', site.address);
   if (newAddress === null) return;
@@ -544,32 +456,74 @@ function editSite(index) {
   if (newPhone === null) return;
   const newEmail = prompt('Enter new email', site.email);
   if (newEmail === null) return;
-  sites[index] = { name:newName, address:newAddress, foreman:newForeman, phone:newPhone, email:newEmail };
+  sites[index] = {name:newName, address:newAddress, foreman:newForeman, phone:newPhone, email:newEmail};
   saveData();
-  loadSites();
   populateSiteOptions();
+  loadSites();
 }
 
 function removeSite(index) {
   if (confirm('Remove location?')) {
     sites.splice(index,1);
     saveData();
-    loadSites();
     populateSiteOptions();
+    loadSites();
   }
 }
 
-function startScanner() {
-  document.getElementById('qr-result').textContent='';
-  if (!scanner) scanner = new Html5Qrcode('qr-reader');
-  scanner.start({facingMode:'environment'},{fps:10,qrbox:250}, decodedText => {
-    document.getElementById('qr-result').textContent = 'Scanned: '+decodedText;
-    scanner.stop();
-  }, error => { console.log(error); }).catch(err => { console.log(err); });
+function loadUsers() {
+  const tbody = document.getElementById('usersBody');
+  tbody.innerHTML = '';
+  users.forEach((user, index) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${user.username}</td>
+      <td>${user.role}</td>
+      <td>${user.site}</td>
+      <td>${user.phone}</td>
+      <td>${user.email}</td>
+      <td><button class="button is-small" onclick="editUser(${index})">Edit</button>
+          <button class="button is-small is-danger" onclick="removeUser(${index})">Remove</button></td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-function stopScanner() {
-  if (scanner) scanner.stop().catch(err => console.log(err));
+function addUser() {
+  const username = document.getElementById('userName').value;
+  const pin = document.getElementById('userPin').value;
+  const role = document.getElementById('userRole').value;
+  const site = document.getElementById('userSite').value;
+  const phone = document.getElementById('userPhone').value;
+  const email = document.getElementById('userEmail').value;
+  if (!username || !pin) { alert('Username and PIN required'); return; }
+  users.push({username, pin, role, site, phone, email});
+  saveData();
+  loadUsers();
+}
+
+function editUser(index) {
+  const user = users[index];
+  const newPin = prompt('Enter new PIN', user.pin);
+  if (newPin === null) return;
+  const newRole = prompt('Enter new role', user.role);
+  if (newRole === null) return;
+  const newSite = prompt('Enter new site', user.site);
+  if (newSite === null) return;
+  const newPhone = prompt('Enter new phone', user.phone);
+  if (newPhone === null) return;
+  const newEmail = prompt('Enter new email', user.email);
+  if (newEmail === null) return;
+  users[index] = {username:user.username, pin:newPin, role:newRole, site:newSite, phone:newPhone, email:newEmail};
+  saveData();
+  populateSiteOptions();
+  loadUsers();
+}
+
+function removeUser(index) {
+  if (confirm('Remove user?')) {
+    users.splice(index,1);
+    saveData();
+    loadUsers();
+  }
 }
 </script>
 </body>
