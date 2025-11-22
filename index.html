@@ -98,33 +98,72 @@ Quantity <input id="add-qty" type="number"><br>
 Location
 <select id="add-location"></select><br>
 
-<label>Acquisition Date <input id="add-date" type="date"></label
+<label>Acquisition Date <input id="add-date" type="date"></label><br>
+<label>Acquisition Cost (€) <input id="add-cost" type="number"></label><br>
+<label><input id="add-rented" type="checkbox"> Rented?</label><br>
+<label>Rental Start <input id="add-rental-start" type="date"></label><br>
+<label>Rental Rate/day (€) <input id="add-rental-rate" type="number"></label><br>
+
+<button id="add-btn">Add</button>
+<button id="generate-qr-btn">Generate QR Label</button>
+
+<div id="qr-output"></div>
+</div>
+<div id="request-screen" style="display:none;">
+<h2>Request Item</h2>
+Coming soon...
+</div>
+
+<div id="scan-screen" style="display:none;">
+<h2>Scan QR</h2>
+<input type="file" accept="image/*" capture="camera">
+</div>
+
+<div id="locations-screen" style="display:none;">
+<h2>Locations</h2>
+<table id="locations-table">
+<tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th></tr>
+</table>
+</div>
+
+<div id="users-screen" style="display:none;">
+<h2>Users</h2>
+<table id="users-table">
+<tr><th>Username</th><th>Role</th><th>Location</th><th>Phone</th><th>Email</th></tr>
+</table>
+</div>
+
+</div>
+
 <script>
-let users = JSON.parse(localStorage.getItem("users")) || [
-    {username:"admin", pin:"1234", role:"admin", site:"Main Yard", phone:"0123456789", email:"admin@yard.com"}
+/* RESET & SIMULATION LOAD */
+localStorage.clear();
+
+/* USERS */
+let users = [
+    {username:"admin", pin:"1234", role:"admin", site:"Main Yard", phone:"0123456789", email:"admin@yard.com"},
+    {username:"nony", pin:"1234", role:"foreman", site:"Bennett Lucan Site", phone:"0862222222", email:"nony@lucan.com"},
+    {username:"maria", pin:"1234", role:"foreman", site:"Dublin Hegarty Site", phone:"0853333333", email:"maria@hegarty.com"}
 ];
 
-let locations = JSON.parse(localStorage.getItem("locations")) || [
+/* LOCATIONS */
+let locations = [
     {name:"Main Yard", address:"123 Yard Rd, Dublin", foreman:"John Doe", phone:"0123456789", email:"john@yard.com"},
     {name:"Yard 2", address:"456 Site St, Dublin", foreman:"Michael Smith", phone:"0871111111", email:"michael@yard2site.com"},
     {name:"Bennett Lucan Site", address:"Lucan, Dublin", foreman:"Nony", phone:"0862222222", email:"nony@lucan.com"},
     {name:"Dublin Hegarty Site", address:"Dublin City", foreman:"Maria Kelly", phone:"0853333333", email:"maria@hegarty.com"}
 ];
 
-let inventory = JSON.parse(localStorage.getItem("inventory")) || [
+/* INVENTORY SIMULATION */
+let inventory = [
     {name:"Doka Frami Panel", size:"90x150", qty:10, location:"Main Yard", date:"2024-01-10", cost:250, rented:false},
     {name:"Doka Frami Panel", size:"90x150", qty:5, location:"Dublin Hegarty Site", date:"2024-01-15", cost:250, rented:false},
+    {name:"Doka Frami Panel", size:"75x150", qty:8, location:"Yard 2", date:"2024-01-18", cost:220, rented:false},
     {name:"H20 Beam", size:"3.9m", qty:8, location:"Main Yard", date:"2024-01-12", cost:40, rented:false},
     {name:"H20 Beam", size:"3.9m", qty:4, location:"Bennett Lucan Site", date:"2024-01-20", cost:40, rented:false},
     {name:"Prop P3", size:"Adjustable", qty:5, location:"Dublin Hegarty Site", date:"2024-01-05", cost:90, rented:true, rentalStart:"2024-02-01", rentalRate:2},
     {name:"Prop P3", size:"Adjustable", qty:3, location:"Main Yard", date:"2024-01-03", cost:90, rented:true, rentalStart:"2024-02-01", rentalRate:2}
 ];
-
-function save() {
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("inventory", JSON.stringify(inventory));
-    localStorage.setItem("locations", JSON.stringify(locations));
-}
 
 function calculateRental(start, rate) {
     if (!start || !rate) return 0;
@@ -159,7 +198,7 @@ function updateInventoryTable() {
 
         table.innerHTML += `
 <tr>
-<td>${item.name}</td>
+<td class="location-link">${item.name}</td>
 <td>${item.size}</td>
 <td>${item.qty}</td>
 <td>${item.location}</td>
@@ -176,61 +215,41 @@ function updateInventoryTable() {
     document.getElementById("inventory-total").innerHTML =
         `<h3>Total Value: €${totalValue.toFixed(2)} | Rental Cost: €${totalRental.toFixed(2)}</h3>`;
 }
-
 function removeItem(name,size,location) {
     inventory = inventory.filter(i=>!(i.name===name && i.size===size && i.location===location));
-    save();
     updateInventoryTable();
 }
-function populateSelectors() {
-    let invLoc = document.getElementById("inventory-location");
-    let addLoc = document.getElementById("add-location");
 
-    invLoc.innerHTML = `<option value="">All</option>`;
-    addLoc.innerHTML = ``;
-
-    locations.forEach(loc=>{
-        invLoc.innerHTML += `<option value="${loc.name}">${loc.name}</option>`;
-        addLoc.innerHTML += `<option value="${loc.name}">${loc.name}</option>`;
-    });
-}
-
+/* AUTOCOMPLETE */
 function getMaterialList() {
     let map = {};
     inventory.forEach(i=>{
         let key = i.name+"|"+i.size;
-        if (!map[key]) map[key] = {name:i.name,size:i.size,total:0,bySite:{}};
-        map[key].total += i.qty;
-        if (!map[key].bySite[i.location]) map[key].bySite[i.location]=0;
+        if (!map[key]) map[key]={name:i.name,size:i.size,total:0,bySite:{}};
+        map[key].total+=i.qty;
+        if(!map[key].bySite[i.location]) map[key].bySite[i.location]=0;
         map[key].bySite[i.location]+=i.qty;
     });
     return map;
 }
 
 document.getElementById("add-name").addEventListener("input",()=>{
-    let val = document.getElementById("add-name").value.toLowerCase();
-    let list = document.getElementById("autocomplete");
+    let val=document.getElementById("add-name").value.toLowerCase();
+    let list=document.getElementById("autocomplete");
     list.innerHTML="";
-    if (!val) { list.style.display="none"; return; }
+    if(!val){ list.style.display="none"; return;}
 
-    let mats = getMaterialList();
+    let mats=getMaterialList();
 
     Object.values(mats).forEach(m=>{
-        let full = (m.name+" "+m.size).toLowerCase();
-        if (full.includes(val)) {
-            let sites = Object.entries(m.bySite).map(s=>`${s[0]}:${s[1]}`).join(" / ");
-            list.innerHTML +=
-                `<div class="autocomplete-item" onclick="selectMaterial('${m.name}','${m.size}')">
-                ${m.name} ${m.size} – ${m.total} (${sites})
-                </div>`;
+        let full=(m.name+" "+m.size).toLowerCase();
+        if(full.includes(val)){
+            let sites=Object.entries(m.bySite).map(s=>`${s[0]}:${s[1]}`).join(" / ");
+            list.innerHTML+=`<div class="autocomplete-item" onclick="selectMaterial('${m.name}','${m.size}')">${m.name} ${m.size} – ${m.total} (${sites})</div>`;
         }
     });
 
-    list.innerHTML +=
-        `<div class="autocomplete-item" onclick="newMaterial()">
-        ➕ Add new: "${document.getElementById("add-name").value}"
-        </div>`;
-
+    list.innerHTML+=`<div class="autocomplete-item" onclick="newMaterial()">➕ Add new: "${document.getElementById("add-name").value}"</div>`;
     list.style.display="block";
 });
 
@@ -239,32 +258,19 @@ function selectMaterial(name,size) {
     document.getElementById("add-name").value=name;
     document.getElementById("add-size").value=size;
 
-    let mats = getMaterialList();
-    let m = mats[name+"|"+size];
+    let mats=getMaterialList();
+    let m=mats[name+"|"+size];
 
-    let loc = document.getElementById("add-location").value;
-    let here = m.bySite[loc] || 0;
+    let loc=document.getElementById("add-location").value;
+    let here=m.bySite[loc]||0;
 
     document.getElementById("existing-info").style.display="block";
-    document.getElementById("existing-info").innerHTML=
-        `Current at ${loc}: ${here}<br>Total company: ${m.total}`;
-
-    document.getElementById("add-cost").style.display="none";
-    document.getElementById("add-date").style.display="none";
-    document.getElementById("add-rented").style.display="none";
-    document.getElementById("add-rental-start").style.display="none";
-    document.getElementById("add-rental-rate").style.display="none";
+    document.getElementById("existing-info").innerHTML=`Current at ${loc}: ${here}<br>Total company: ${m.total}`;
 }
 
 function newMaterial() {
     document.getElementById("autocomplete").style.display="none";
     document.getElementById("existing-info").style.display="none";
-
-    document.getElementById("add-cost").style.display="inline-block";
-    document.getElementById("add-date").style.display="inline-block";
-    document.getElementById("add-rented").style.display="inline-block";
-    document.getElementById("add-rental-start").style.display="inline-block";
-    document.getElementById("add-rental-rate").style.display="inline-block";
 }
 
 document.getElementById("add-btn").onclick=()=>{
@@ -273,73 +279,54 @@ document.getElementById("add-btn").onclick=()=>{
     let qty=parseInt(document.getElementById("add-qty").value);
     let loc=document.getElementById("add-location").value;
 
-    let existing = inventory.find(i=>i.name===name && i.size===size && i.location===loc);
-    if (existing) {
-        existing.qty += qty;
+    let existing=inventory.find(i=>i.name===name && i.size===size && i.location===loc);
+    if(existing){
+        existing.qty+=qty;
     } else {
-        inventory.push({
-            name,size,qty,location:loc,
-            date:document.getElementById("add-date").value,
-            cost:parseFloat(document.getElementById("add-cost").value),
-            rented:document.getElementById("add-rented").checked,
-            rentalStart:document.getElementById("add-rental-start").value,
-            rentalRate:parseFloat(document.getElementById("add-rental-rate").value)
-        });
+        inventory.push({name,size,qty,location:loc,date:"2025-01-01",cost:100,rented:false});
     }
 
-    save();
     updateInventoryTable();
 };
 
-document.querySelectorAll("td:first-child").forEach(cell=>{
-    cell.classList.add("location-link");
-});
-
-function goToLocation(loc) {
-    document.getElementById("tab-inventory").click();
-    document.getElementById("inventory-location").value=loc;
-    updateInventoryTable();
-}
-
-document.getElementById("locations").innerHTML="";
-
+/* CLICK LOCATION */
 document.addEventListener("click",e=>{
-    if (e.target.classList.contains("location-link")) {
-        goToLocation(e.target.innerText);
+    if(e.target.classList.contains("location-link")){
+        document.getElementById("tab-inventory").click();
+        document.getElementById("inventory-location").value=e.target.innerText;
+        updateInventoryTable();
     }
 });
 
-// QR GENERATOR
+/* QR */
 document.getElementById("generate-qr-btn").onclick=()=>{
     let text=document.getElementById("add-name").value+" "+document.getElementById("add-size").value;
-    document.getElementById("qr-output").innerHTML=
-        `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}">`;
+    document.getElementById("qr-output").innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}">`;
 };
 
-// LOGIN
+/* LOGIN */
 document.getElementById("login-btn").onclick=()=>{
     let u=document.getElementById("login-user").value;
     let p=document.getElementById("login-pin").value;
     let ok=users.find(x=>x.username===u && x.pin===p);
-    if (!ok) return;
+    if(!ok) return;
     document.getElementById("login-screen").style.display="none";
     document.getElementById("inventory-screen").style.display="block";
     populateSelectors();
     updateInventoryTable();
 };
 
-// TAB LOGIC
+/* TAB */
 document.querySelectorAll("nav button").forEach(btn=>{
     btn.onclick=()=>{
         document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
         btn.classList.add("active");
 
-        document.getElementById("inventory-screen").style.display="none";
-        document.getElementById("add-screen").style.display="none";
-        document.getElementById("request-screen")?.style.display="none";
-        document.getElementById("scan-screen")?.style.display="none";
-        document.getElementById("locations-screen")?.style.display="none";
-        document.getElementById("users-screen")?.style.display="none";
+        document.querySelectorAll(".container > div").forEach(s=>s.style.display="none");
+
+        let id=btn.id.replace("tab-","");
+        document.getElementById(id+"-screen").style.display="block";
+        if(id==="inventory") updateInventoryTable();
     };
 });
 </script>
