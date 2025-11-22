@@ -1,207 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yard2Site Tracker</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
-  <script src="https://unpkg.com/html5-qrcode@2.3.6/html5-qrcode.min.js"></script>
-  <style>
-    body { padding: 20px; }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yard2Site Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.6/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body { padding:20px; }
+.hidden { display:none; }
+canvas { border:1px solid #ccc; }
+</style>
 </head>
 <body>
-  <h1 class="title">Yard2Site Tracker</h1>
-  <p class="subtitle">Internal material tracking system</p>
-  <div id="login">
-    <h2 class="title is-4">Login</h2>
-    <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="username" placeholder="Enter username"></div></div>
-    <div class="field"><label class="label">PIN</label><div class="control"><input class="input" type="password" id="pin" placeholder="Enter PIN"></div></div>
-    <button class="button is-primary" onclick="login()">Login</button>
-  </div>
-  <div id="dashboard" class="hidden">
-    <h2 class="title is-4">Dashboard</h2>
-    <div class="tabs"><ul id="tabsList"></ul></div>
-    <div id="inventory" class="tab-content">
-      <h3 class="title is-5">Current Inventory</h3>
-      <table class="table is-fullwidth"><thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table>
-    </div>
-    <div id="addItem" class="tab-content hidden">
-      <h3 class="title is-5">Add Item</h3>
-      <div class="field"><label class="label">Item Name</label><div class="control"><input class="input" id="itemName"></div></div>
-      <div class="field"><label class="label">Site</label><div class="control"><input class="input" id="itemSite"></div></div>
-      <div class="field"><label class="label">Quantity</label><div class="control"><input class="input" type="number" id="itemQty"></div></div>
-      <div class="field"><label class="label">Status</label><div class="control"><div class="select"><select id="itemStatus"><option>Yard</option><option>On Site</option><option>Rented</option></select></div></div></div>
-      <button class="button is-link" onclick="addItem()">Add</button>
-    </div>
-    <div id="request" class="tab-content hidden">
-      <h3 class="title is-5">Request Delivery</h3>
-      <div class="field"><label class="label">Item Name</label><div class="control"><input class="input" id="requestName"></div></div>
-      <div class="field"><label class="label">Quantity</label><div class="control"><input class="input" type="number" id="requestQty"></div></div>
-      <div class="field"><label class="label">Delivery Date</label><div class="control"><input class="input" type="date" id="requestDate"></div></div>
-      <button class="button is-info" onclick="requestDelivery()">Request</button>
-    </div>
-    <div id="scan" class="tab-content hidden">
-      <h3 class="title is-5">Scan Item</h3>
-      <div id="qr-reader" style="width:300px"></div>
-      <p id="qr-result"></p>
-      <button class="button is-info" onclick="startScanner()">Start Scan</button>
-      <button class="button is-warning" onclick="stopScanner()">Stop Scan</button>
-    </div>
-    <div id="users" class="tab-content hidden">
-      <h3 class="title is-5">User Management</h3>
-      <table class="table is-fullwidth"><thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody id="userTable"></tbody></table>
-      <h4 class="title is-6">Add User</h4>
-      <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="newUsername"></div></div>
-      <div class="field"><label class="label">PIN</label><div class="control"><input class="input" id="newPin"></div></div>
-      <div class="field"><label class="label">Role</label><div class="control"><div class="select"><select id="newRole"><option>foreman</option><option>driver</option><option>yard</option><option>admin</option></select></div></div></div>
-      <button class="button is-primary" onclick="addUser()">Add User</button>
+<h1 class="title">Yard2Site Tracker</h1>
+<p class="subtitle">Internal material tracking system</p>
+<div id="login">
+  <h2 class="title is-4">Login</h2>
+  <div class="field">
+    <label class="label">Username</label>
+    <div class="control">
+      <input class="input" id="username" placeholder="Enter username">
     </div>
   </div>
+  <div class="field">
+    <label class="label">PIN</label>
+    <div class="control">
+      <input class="input" type="password" id="pin" placeholder="Enter PIN">
+    </div>
+  </div>
+  <button class="button is-primary" onclick="login()">Login</button>
+</div>
+<div id="dashboard" class="hidden">
+  <h2 class="title is-4">Dashboard</h2>
+  <div class="tabs">
+    <ul id="tabsList"></ul>
+  </div>
+  <div id="inventory" class="tab-content">
+    <h3 class="title is-5">Inventory</h3>
+    <label class="checkbox"><input type="checkbox" id="hideZero" onchange="loadInventory()"> Hide items with zero stock</label>
+    <table class="table is-striped is-hoverable">
+      <thead><tr><th>Name</th><th>Size</th><th>Quantity</th><th>Actions</th></tr></thead>
+      <tbody id="inventoryTable"></tbody>
+    </table>
+  </div>
+  <div id="addItem" class="tab-content hidden">
+    <h3 class="title is-5">Add Item</h3>
+    <div class="field">
+      <label class="label">Item Name</label>
+      <div class="control"><input class="input" id="newName"></div>
+    </div>
+    <div class="field">
+      <label class="label">Size / Details</label>
+      <div class="control"><input class="input" id="newSize"></div>
+    </div>
+    <div class="field">
+      <label class="label">Quantity</label>
+      <div class="control"><input class="input" type="number" id="newQty"></div>
+    </div>
+    <button class="button is-primary" onclick="addItem()">Add Item</button>
+  </div>
+  <div id="request" class="tab-content hidden">
+    <h3 class="title is-5">Request Delivery</h3>
+    <div class="field">
+      <label class="label">Item Name</label>
+      <div class="control"><input class="input" id="reqName"></div>
+    </div>
+    <div class="field">
+      <label class="label">Quantity</label>
+      <div class="control"><input class="input" type="number" id="reqQty"></div>
+    </div>
+    <div class="field">
+      <label class="label">Delivery Date</label>
+      <div class="control"><input class="input" type="date" id="reqDate"></div>
+    </div>
+    <button class="button is-primary" onclick="requestDelivery()">Submit Request</button>
+  </div>
+  <div id="scan" class="tab-content hidden">
+    <h3 class="title is-5">Scan Item</h3>
+    <div id="qr-reader" style="width:300px;"></div>
+    <p id="qr-result"></p>
+    <button class="button is-primary" onclick="startScanner()">Start Scan</button>
+    <button class="button" onclick="stopScanner()">Stop Scan</button>
+  </div>
+  <div id="users" class="tab-content hidden">
+    <h3 class="title is-5">Users</h3>
+    <table class="table is-striped is-hoverable"><thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table>
+    <h4 class="title is-6">Add User</h4>
+    <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="newUser"></div></div>
+    <div class="field"><label class="label">PIN</label><div class="control"><input class="input" id="newUserPin"></div></div>
+    <div class="field"><label class="label">Role</label><div class="control"><div class="select"><select id="newUserRole"><option value="foreman">Foreman</option><option value="driver">Driver</option><option value="yard">Yard</option><option value="admin">Admin</option></select></div></div></div>
+    <button class="button is-primary" onclick="addUser()">Add User</button>
+  </div>
+</div>
 <script>
-  let users = JSON.parse(localStorage.getItem('users') || '[]');
-  if (users.length === 0) {
-    users = [{username:'admin', pin:'1234', role:'admin'}];
+let users = JSON.parse(localStorage.getItem('users')) || [{username:'admin', pin:'1234', role:'admin'}];
+let inventory = JSON.parse(localStorage.getItem('inventory')) || null;
+const allItems = [
+  {name:'Doka Frami panel', size:'90x150', quantity:20},
+  {name:'Doka Frami panel', size:'90x120', quantity:0},
+  {name:'Doka Frami panel', size:'90x90', quantity:5},
+  {name:'Peri TRIO panel', size:'240x120', quantity:10},
+  {name:'Doka H20 beam', size:'3.9m', quantity:15},
+  {name:'Doka H20 beam', size:'4.5m', quantity:0},
+  {name:'Prop', size:'P1', quantity:10},
+  {name:'Prop', size:'P2', quantity:0},
+  {name:'Prop', size:'P3', quantity:8},
+  {name:'Ladder', size:'Standard', quantity:3},
+  {name:'Chain', size:'3m', quantity:5},
+  {name:'Slings', size:'5m', quantity:2},
+  {name:'Nails', size:'50mm box', quantity:100},
+  {name:'Nails', size:'75mm box', quantity:50},
+  {name:'Screw', size:'Wood 50mm', quantity:200},
+  {name:'Battery Tool', size:'Hilti Impact Driver', quantity:4},
+  {name:'Corded Tool', size:'Concrete Vibrator', quantity:1},
+  {name:'Tie Rod', size:'1m', quantity:40},
+  {name:'Wing Nut', size:'standard', quantity:80},
+  {name:'Clamp', size:'standard', quantity:30},
+  {name:'Waterstop', size:'PVC', quantity:0}
+];
+function initializeInventory() {
+  if (!inventory) {
+    inventory = allItems;
+    localStorage.setItem('inventory', JSON.stringify(inventory));
+  }
+}
+function login() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('pin').value.trim();
+  const user = users.find(uObj => uObj.username === u && uObj.pin === p);
+  if (user) {
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    initializeInventory();
+    renderTabs(user.role);
+    loadInventory();
+    if (user.role === 'admin') loadUsers();
+  } else {
+    alert('Invalid credentials');
+  }
+}
+function renderTabs(role) {
+  const tabs = ['inventory','addItem','request','scan'];
+  if (role === 'admin') tabs.push('users');
+  const list = document.getElementById('tabsList');
+  list.innerHTML = '';
+  tabs.forEach(tab => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a onclick="showTab('${tab}')" id="tab-${tab}">${tab.charAt(0).toUpperCase()+tab.slice(1)}</a>`;
+    list.appendChild(li);
+  });
+  showTab(tabs[0]);
+}
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
+  document.getElementById(tab).classList.remove('hidden');
+  document.querySelectorAll('#tabsList li a').forEach(a=>a.classList.remove('is-active'));
+  document.getElementById('tab-'+tab).classList.add('is-active');
+  if (tab==='inventory') loadInventory();
+  if (tab==='users') loadUsers();
+}
+function loadInventory() {
+  initializeInventory();
+  const hideZero = document.getElementById('hideZero').checked;
+  const table = document.getElementById('inventoryTable');
+  table.innerHTML = '';
+  inventory.forEach((item, index) => {
+    if (hideZero && (!item.quantity || item.quantity == 0)) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${item.name}</td><td>${item.size}</td><td>${item.quantity}</td><td><button class="button is-small is-danger" onclick="removeItem(${index})">Remove</button></td>`;
+    table.appendChild(tr);
+  });
+}
+function addItem() {
+  const name = document.getElementById('newName').value.trim();
+  const size = document.getElementById('newSize').value.trim();
+  const qty = parseInt(document.getElementById('newQty').value.trim());
+  if (!name || !size || isNaN(qty)) { alert('Fill all fields'); return; }
+  inventory.push({name, size, quantity: qty});
+  localStorage.setItem('inventory', JSON.stringify(inventory));
+  document.getElementById('newName').value = '';
+  document.getElementById('newSize').value = '';
+  document.getElementById('newQty').value = '';
+  loadInventory();
+}
+function removeItem(index) {
+  if (confirm('Remove item ' + inventory[index].name + ' ' + inventory[index].size + '?')) {
+    inventory.splice(index, 1);
+    localStorage.setItem('inventory', JSON.stringify(inventory));
+    loadInventory();
+  }
+}
+function requestDelivery() {
+  const name = document.getElementById('reqName').value.trim();
+  const qty = parseInt(document.getElementById('reqQty').value.trim());
+  const date = document.getElementById('reqDate').value;
+  if (!name || isNaN(qty) || !date) { alert('Fill all fields'); return; }
+  alert('Delivery requested for ' + qty + ' x ' + name + ' on ' + date);
+  document.getElementById('reqName').value = '';
+  document.getElementById('reqQty').value = '';
+  document.getElementById('reqDate').value = '';
+}
+function loadUsers() {
+  const tbody = document.getElementById('usersTable');
+  tbody.innerHTML = '';
+  users.forEach((u,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td><td>
+    <button class="button is-small" onclick="editUser(${i})">Edit</button>
+    <button class="button is-small is-danger" onclick="removeUser(${i})">Remove</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function addUser() {
+  const uname = document.getElementById('newUser').value.trim();
+  const pin = document.getElementById('newUserPin').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  if (!uname || !pin) { alert('Fill all fields'); return; }
+  users.push({username: uname, pin: pin, role: role});
+  localStorage.setItem('users', JSON.stringify(users));
+  document.getElementById('newUser').value='';
+  document.getElementById('newUserPin').value='';
+  loadUsers();
+}
+function editUser(index) {
+  const u = users[index];
+  const newPin = prompt('Enter new PIN for ' + u.username, u.pin);
+  const newRole = prompt('Enter new role for ' + u.username, u.role);
+  if (newPin && newRole) {
+    users[index].pin = newPin;
+    users[index].role = newRole;
     localStorage.setItem('users', JSON.stringify(users));
+    loadUsers();
   }
-  let inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
-  let html5QrCode;
-  function login() {
-    const username = document.getElementById('username').value;
-    const pin = document.getElementById('pin').value;
-    const user = users.find(u => u.username === username && u.pin === pin);
-    if (user) {
-      window.currentUser = user;
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('dashboard').classList.remove('hidden');
-      const tabsUl = document.getElementById('tabsList');
-      tabsUl.innerHTML = '';
-      const tabs = ['inventory','addItem','request','scan'];
-      if (user.role === 'admin') {
-        tabs.push('users');
-      }
-      tabs.forEach((tabName, index) => {
-        const li = document.createElement('li');
-        if (index === 0) li.classList.add('is-active');
-        li.setAttribute('data-tab', tabName);
-        const a = document.createElement('a');
-        a.textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1);
-        li.appendChild(a);
-        tabsUl.appendChild(li);
-      });
-      attachTabListeners();
-      loadInventory();
-      if (user.role === 'admin') loadUsers();
-    } else {
-      alert('Invalid credentials');
-    }
+}
+function removeUser(index) {
+  if (confirm('Remove user ' + users[index].username + '?')) {
+    users.splice(index, 1);
+    localStorage.setItem('users', JSON.stringify(users));
+    loadUsers();
   }
-  function attachTabListeners() {
-    document.querySelectorAll('.tabs li').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        document.querySelectorAll('.tabs li').forEach(function(t) { t.classList.remove('is-active'); });
-        tab.classList.add('is-active');
-        const tabName = tab.getAttribute('data-tab');
-        document.querySelectorAll('.tab-content').forEach(function(cont) { cont.classList.add('hidden'); });
-        document.getElementById(tabName).classList.remove('hidden');
-        if (tabName === 'users') loadUsers();
-        if (tabName === 'inventory') loadInventory();
-      });
-    });
+}
+let html5QrCode;
+function startScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().catch(err=>{});
   }
-  function loadInventory() {
-    const tbody = document.getElementById('inventoryTable');
-    tbody.innerHTML = '';
-    inventory.forEach((item, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>' + '<td><button class="button is-small is-danger" onclick="removeItem(' + index + ')">Remove</button></td>';
-      tbody.appendChild(tr);
-    });
+  html5QrCode = new Html5Qrcode("qr-reader");
+  html5QrCode.start({ facingMode: 'environment' }, { fps: 10, qrbox: 250 }, (decodedText, decodedResult) => {
+    document.getElementById('qr-result').innerText = 'Scanned: ' + decodedText;
+    html5QrCode.stop();
+  }, (errorMessage) => {
+    // ignore errors
+  });
+}
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop().catch(err=>{});
   }
-  function addItem() {
-    const name = document.getElementById('itemName').value;
-    const site = document.getElementById('itemSite').value;
-    const qty = parseInt(document.getElementById('itemQty').value);
-    const status = document.getElementById('itemStatus').value;
-    if (name && site && qty) {
-      inventory.push({ name, site, qty, status });
-      localStorage.setItem('inventory', JSON.stringify(inventory));
-      loadInventory();
-      alert('Item added');
-    }
-  }
-  function removeItem(index) {
-    if (confirm('Remove this item?')) {
-      inventory.splice(index, 1);
-      localStorage.setItem('inventory', JSON.stringify(inventory));
-      loadInventory();
-    }
-  }
-  function requestDelivery() {
-    const item = document.getElementById('requestName').value;
-    const qty = parseInt(document.getElementById('requestQty').value);
-    const date = document.getElementById('requestDate').value;
-    if (item && qty && date) {
-      alert('Request submitted for ' + item + ' x ' + qty + ' on ' + date);
-    }
-  }
-  function loadUsers() {
-    const tbody = document.getElementById('userTable');
-    tbody.innerHTML = '';
-    users.forEach((u, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + u.username + '</td><td>' + u.role + '</td>' + '<td><button class="button is-small" onclick="editUser(' + index + ')">Edit</button> <button class="button is-small is-danger" onclick="removeUser(' + index + ')">Remove</button></td>';
-      tbody.appendChild(tr);
-    });
-  }
-  function addUser() {
-    const username = document.getElementById('newUsername').value;
-    const pin = document.getElementById('newPin').value;
-    const role = document.getElementById('newRole').value;
-    if (username && pin && role) {
-      users.push({ username, pin, role });
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUsers();
-      alert('User added');
-    }
-  }
-  function editUser(index) {
-    const u = users[index];
-    const newPin = prompt('Enter new PIN for ' + u.username, u.pin);
-    const newRole = prompt('Enter new role for ' + u.username, u.role);
-    if (newPin && newRole) {
-      users[index].pin = newPin;
-      users[index].role = newRole;
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUsers();
-    }
-  }
-  function removeUser(index) {
-    if (confirm('Remove user ' + users[index].username + '?')) {
-      users.splice(index, 1);
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUsers();
-    }
-  }
-  function startScanner() {
-    if (html5QrCode) {
-      html5QrCode.stop().catch(err => {});
-    }
-    html5QrCode = new Html5Qrcode('qr-reader');
-    html5QrCode.start({ facingMode: 'environment' }, { fps: 10, qrbox: 250 }, (decodedText, decodedResult) => {
-      document.getElementById('qr-result').innerText = 'Scanned: ' + decodedText;
-      // Here you could parse the code and update inventory accordingly.
-      html5QrCode.stop();
-    }, (errorMessage) => {
-      // ignore scan errors
-    });
-  }
-  function stopScanner() {
-    if (html5QrCode) {
-      html5QrCode.stop().catch(err => {});
-    }
-  }
+}
 </script>
 </body>
 </html>
