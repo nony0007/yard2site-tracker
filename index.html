@@ -4,9 +4,111 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yard2Site Tracker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+  <style>
+    body { padding: 20px; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <h1>Yard2Site Tracker</h1>
-  <p>This internal system is under construction. Stay tuned for updates.</p>
+  <h1 class="title">Yard2Site Tracker</h1>
+  <p class="subtitle">Internal material tracking system</p>
+  <div id="login">
+    <h2 class="title is-4">Login</h2>
+    <div class="field">
+      <label class="label">Username</label>
+      <div class="control">
+        <input class="input" id="username" placeholder="Enter username">
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">PIN</label>
+      <div class="control">
+        <input class="input" type="password" id="pin" placeholder="Enter PIN">
+      </div>
+    </div>
+    <button class="button is-primary" onclick="login()">Login</button>
+  </div>
+  <div id="dashboard" class="hidden">
+    <h2 class="title is-4">Dashboard</h2>
+    <div class="tabs">
+      <ul>
+        <li class="is-active" data-tab="inventory"><a>Inventory</a></li>
+        <li data-tab="addItem"><a>Add Item</a></li>
+        <li data-tab="request"><a>Request Delivery</a></li>
+      </ul>
+    </div>
+    <div id="inventory" class="tab-content">
+      <h3 class="title is-5">Current Inventory</h3>
+      <table class="table is-fullwidth">
+        <thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th></tr></thead>
+        <tbody id="inventoryTable"></tbody>
+      </table>
+    </div>
+    <div id="addItem" class="tab-content hidden">
+      <h3 class="title is-5">Add Item</h3>
+      <div class="field"><label class="label">Item Name</label><div class="control"><input class="input" id="itemName"></div></div>
+      <div class="field"><label class="label">Site</label><div class="control"><input class="input" id="itemSite"></div></div>
+      <div class="field"><label class="label">Quantity</label><div class="control"><input class="input" type="number" id="itemQty"></div></div>
+      <div class="field"><label class="label">Status</label><div class="control"><div class="select"><select id="itemStatus"><option>Yard</option><option>On Site</option><option>Rented</option></select></div></div></div>
+      <button class="button is-link" onclick="addItem()">Add</button>
+    </div>
+    <div id="request" class="tab-content hidden">
+      <h3 class="title is-5">Request Delivery</h3>
+      <div class="field"><label class="label">Item Name</label><div class="control"><input class="input" id="requestName"></div></div>
+      <div class="field"><label class="label">Quantity</label><div class="control"><input class="input" type="number" id="requestQty"></div></div>
+      <div class="field"><label class="label">Delivery Date</label><div class="control"><input class="input" type="date" id="requestDate"></div></div>
+      <button class="button is-info" onclick="requestDelivery()">Request</button>
+    </div>
+  </div>
+  <script>
+    function login() {
+      const user = document.getElementById('username').value;
+      if (user) {
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        loadInventory();
+      }
+    }
+    const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+    function loadInventory() {
+      const tbody = document.getElementById('inventoryTable');
+      tbody.innerHTML = '';
+      for (const item of inventory) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>';
+        tbody.appendChild(tr);
+      }
+    }
+    function addItem() {
+      const name = document.getElementById('itemName').value;
+      const site = document.getElementById('itemSite').value;
+      const qty = parseInt(document.getElementById('itemQty').value);
+      const status = document.getElementById('itemStatus').value;
+      if (name && site && qty) {
+        inventory.push({ name, site, qty, status });
+        localStorage.setItem('inventory', JSON.stringify(inventory));
+        loadInventory();
+        alert('Item added');
+      }
+    }
+    function requestDelivery() {
+      const item = document.getElementById('requestName').value;
+      const qty = parseInt(document.getElementById('requestQty').value);
+      const date = document.getElementById('requestDate').value;
+      if (item && qty && date) {
+        alert('Request submitted for ' + item + ' x ' + qty + ' on ' + date);
+      }
+    }
+    document.querySelectorAll('.tabs li').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.tabs li').forEach(function (t) { t.classList.remove('is-active'); });
+        tab.classList.add('is-active');
+        const tabName = tab.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(function (cont) { cont.classList.add('hidden'); });
+        document.getElementById(tabName).classList.remove('hidden');
+      });
+    });
+  </script>
 </body>
 </html>
