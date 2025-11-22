@@ -15,35 +15,16 @@
   <p class="subtitle">Internal material tracking system</p>
   <div id="login">
     <h2 class="title is-4">Login</h2>
-    <div class="field">
-      <label class="label">Username</label>
-      <div class="control">
-        <input class="input" id="username" placeholder="Enter username">
-      </div>
-    </div>
-    <div class="field">
-      <label class="label">PIN</label>
-      <div class="control">
-        <input class="input" type="password" id="pin" placeholder="Enter PIN">
-      </div>
-    </div>
+    <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="username" placeholder="Enter username"></div></div>
+    <div class="field"><label class="label">PIN</label><div class="control"><input class="input" type="password" id="pin" placeholder="Enter PIN"></div></div>
     <button class="button is-primary" onclick="login()">Login</button>
   </div>
   <div id="dashboard" class="hidden">
     <h2 class="title is-4">Dashboard</h2>
-    <div class="tabs">
-      <ul>
-        <li class="is-active" data-tab="inventory"><a>Inventory</a></li>
-        <li data-tab="addItem"><a>Add Item</a></li>
-        <li data-tab="request"><a>Request Delivery</a></li>
-      </ul>
-    </div>
+    <div class="tabs"><ul id="tabsList"></ul></div>
     <div id="inventory" class="tab-content">
       <h3 class="title is-5">Current Inventory</h3>
-      <table class="table is-fullwidth">
-        <thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th></tr></thead>
-        <tbody id="inventoryTable"></tbody>
-      </table>
+      <table class="table is-fullwidth"><thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th></tr></thead><tbody id="inventoryTable"></tbody></table>
     </div>
     <div id="addItem" class="tab-content hidden">
       <h3 class="title is-5">Add Item</h3>
@@ -60,55 +41,116 @@
       <div class="field"><label class="label">Delivery Date</label><div class="control"><input class="input" type="date" id="requestDate"></div></div>
       <button class="button is-info" onclick="requestDelivery()">Request</button>
     </div>
+    <div id="users" class="tab-content hidden">
+      <h3 class="title is-5">User Management</h3>
+      <table class="table is-fullwidth"><thead><tr><th>Username</th><th>Role</th></tr></thead><tbody id="userTable"></tbody></table>
+      <h4 class="title is-6">Add User</h4>
+      <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="newUsername"></div></div>
+      <div class="field"><label class="label">PIN</label><div class="control"><input class="input" id="newPin"></div></div>
+      <div class="field"><label class="label">Role</label><div class="control"><div class="select"><select id="newRole"><option>foreman</option><option>driver</option><option>yard</option><option>admin</option></select></div></div></div>
+      <button class="button is-primary" onclick="addUser()">Add User</button>
+    </div>
   </div>
-  <script>
-    function login() {
-      const user = document.getElementById('username').value;
-      if (user) {
-        document.getElementById('login').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
-        loadInventory();
+<script>
+  let users = JSON.parse(localStorage.getItem('users') || '[]');
+  if (users.length === 0) {
+    users = [{username:'admin', pin:'1234', role:'admin'}];
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+  const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+  function login() {
+    const username = document.getElementById('username').value;
+    const pin = document.getElementById('pin').value;
+    const user = users.find(u => u.username === username && u.pin === pin);
+    if (user) {
+      window.currentUser = user;
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      const tabsUl = document.getElementById('tabsList');
+      tabsUl.innerHTML = '';
+      const tabs = ['inventory','addItem','request'];
+      if (user.role === 'admin') {
+        tabs.push('users');
       }
-    }
-    const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
-    function loadInventory() {
-      const tbody = document.getElementById('inventoryTable');
-      tbody.innerHTML = '';
-      for (const item of inventory) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>';
-        tbody.appendChild(tr);
+      tabs.forEach((tabName, index) => {
+        const li = document.createElement('li');
+        if (index === 0) li.classList.add('is-active');
+        li.setAttribute('data-tab', tabName);
+        const a = document.createElement('a');
+        a.textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+        li.appendChild(a);
+        tabsUl.appendChild(li);
+      });
+      attachTabListeners();
+      loadInventory();
+      if (user.role === 'admin') {
+        loadUsers();
       }
+    } else {
+      alert('Invalid credentials');
     }
-    function addItem() {
-      const name = document.getElementById('itemName').value;
-      const site = document.getElementById('itemSite').value;
-      const qty = parseInt(document.getElementById('itemQty').value);
-      const status = document.getElementById('itemStatus').value;
-      if (name && site && qty) {
-        inventory.push({ name, site, qty, status });
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-        loadInventory();
-        alert('Item added');
-      }
-    }
-    function requestDelivery() {
-      const item = document.getElementById('requestName').value;
-      const qty = parseInt(document.getElementById('requestQty').value);
-      const date = document.getElementById('requestDate').value;
-      if (item && qty && date) {
-        alert('Request submitted for ' + item + ' x ' + qty + ' on ' + date);
-      }
-    }
-    document.querySelectorAll('.tabs li').forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        document.querySelectorAll('.tabs li').forEach(function (t) { t.classList.remove('is-active'); });
+  }
+  function attachTabListeners() {
+    document.querySelectorAll('.tabs li').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tabs li').forEach(function(t) { t.classList.remove('is-active'); });
         tab.classList.add('is-active');
         const tabName = tab.getAttribute('data-tab');
-        document.querySelectorAll('.tab-content').forEach(function (cont) { cont.classList.add('hidden'); });
+        document.querySelectorAll('.tab-content').forEach(function(cont) { cont.classList.add('hidden'); });
         document.getElementById(tabName).classList.remove('hidden');
+        if (tabName === 'users') loadUsers();
       });
     });
-  </script>
+  }
+  function loadInventory() {
+    const tbody = document.getElementById('inventoryTable');
+    tbody.innerHTML = '';
+    for (const item of inventory) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>';
+      tbody.appendChild(tr);
+    }
+  }
+  function addItem() {
+    const name = document.getElementById('itemName').value;
+    const site = document.getElementById('itemSite').value;
+    const qty = parseInt(document.getElementById('itemQty').value);
+    const status = document.getElementById('itemStatus').value;
+    if (name && site && qty) {
+      inventory.push({ name, site, qty, status });
+      localStorage.setItem('inventory', JSON.stringify(inventory));
+      loadInventory();
+      alert('Item added');
+    }
+  }
+  function requestDelivery() {
+    const item = document.getElementById('requestName').value;
+    const qty = parseInt(document.getElementById('requestQty').value);
+    const date = document.getElementById('requestDate').value;
+    if (item && qty && date) {
+      alert('Request submitted for ' + item + ' x ' + qty + ' on ' + date);
+    }
+  }
+  function loadUsers() {
+    const tbody = document.getElementById('userTable');
+    tbody.innerHTML = '';
+    users.forEach(u => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + u.username + '</td><td>' + u.role + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+  function addUser() {
+    const username = document.getElementById('newUsername').value;
+    const pin = document.getElementById('newPin').value;
+    const role = document.getElementById('newRole').value;
+    if (username && pin && role) {
+      users.push({ username, pin, role });
+      localStorage.setItem('users', JSON.stringify(users));
+      loadUsers();
+      alert('User added');
+    }
+  }
+</script>
 </body>
 </html>
