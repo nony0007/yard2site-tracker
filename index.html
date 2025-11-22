@@ -24,7 +24,7 @@
     <div class="tabs"><ul id="tabsList"></ul></div>
     <div id="inventory" class="tab-content">
       <h3 class="title is-5">Current Inventory</h3>
-      <table class="table is-fullwidth"><thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th></tr></thead><tbody id="inventoryTable"></tbody></table>
+      <table class="table is-fullwidth"><thead><tr><th>Item</th><th>Site</th><th>Qty</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventoryTable"></tbody></table>
     </div>
     <div id="addItem" class="tab-content hidden">
       <h3 class="title is-5">Add Item</h3>
@@ -43,7 +43,7 @@
     </div>
     <div id="users" class="tab-content hidden">
       <h3 class="title is-5">User Management</h3>
-      <table class="table is-fullwidth"><thead><tr><th>Username</th><th>Role</th></tr></thead><tbody id="userTable"></tbody></table>
+      <table class="table is-fullwidth"><thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody id="userTable"></tbody></table>
       <h4 class="title is-6">Add User</h4>
       <div class="field"><label class="label">Username</label><div class="control"><input class="input" id="newUsername"></div></div>
       <div class="field"><label class="label">PIN</label><div class="control"><input class="input" id="newPin"></div></div>
@@ -57,7 +57,7 @@
     users = [{username:'admin', pin:'1234', role:'admin'}];
     localStorage.setItem('users', JSON.stringify(users));
   }
-  const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+  let inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
   function login() {
     const username = document.getElementById('username').value;
     const pin = document.getElementById('pin').value;
@@ -83,9 +83,7 @@
       });
       attachTabListeners();
       loadInventory();
-      if (user.role === 'admin') {
-        loadUsers();
-      }
+      if (user.role === 'admin') loadUsers();
     } else {
       alert('Invalid credentials');
     }
@@ -99,17 +97,18 @@
         document.querySelectorAll('.tab-content').forEach(function(cont) { cont.classList.add('hidden'); });
         document.getElementById(tabName).classList.remove('hidden');
         if (tabName === 'users') loadUsers();
+        if (tabName === 'inventory') loadInventory();
       });
     });
   }
   function loadInventory() {
     const tbody = document.getElementById('inventoryTable');
     tbody.innerHTML = '';
-    for (const item of inventory) {
+    inventory.forEach((item, index) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>';
+      tr.innerHTML = '<td>' + item.name + '</td><td>' + item.site + '</td><td>' + item.qty + '</td><td>' + item.status + '</td>' + '<td><button class="button is-small is-danger" onclick="removeItem(' + index + ')">Remove</button></td>';
       tbody.appendChild(tr);
-    }
+    });
   }
   function addItem() {
     const name = document.getElementById('itemName').value;
@@ -123,6 +122,13 @@
       alert('Item added');
     }
   }
+  function removeItem(index) {
+    if (confirm('Remove this item?')) {
+      inventory.splice(index, 1);
+      localStorage.setItem('inventory', JSON.stringify(inventory));
+      loadInventory();
+    }
+  }
   function requestDelivery() {
     const item = document.getElementById('requestName').value;
     const qty = parseInt(document.getElementById('requestQty').value);
@@ -134,9 +140,9 @@
   function loadUsers() {
     const tbody = document.getElementById('userTable');
     tbody.innerHTML = '';
-    users.forEach(u => {
+    users.forEach((u, index) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + u.username + '</td><td>' + u.role + '</td>';
+      tr.innerHTML = '<td>' + u.username + '</td><td>' + u.role + '</td>' + '<td><button class="button is-small" onclick="editUser(' + index + ')">Edit</button> <button class="button is-small is-danger" onclick="removeUser(' + index + ')">Remove</button></td>';
       tbody.appendChild(tr);
     });
   }
@@ -149,6 +155,24 @@
       localStorage.setItem('users', JSON.stringify(users));
       loadUsers();
       alert('User added');
+    }
+  }
+  function editUser(index) {
+    const u = users[index];
+    const newPin = prompt('Enter new PIN for ' + u.username, u.pin);
+    const newRole = prompt('Enter new role for ' + u.username, u.role);
+    if (newPin && newRole) {
+      users[index].pin = newPin;
+      users[index].role = newRole;
+      localStorage.setItem('users', JSON.stringify(users));
+      loadUsers();
+    }
+  }
+  function removeUser(index) {
+    if (confirm('Remove user ' + users[index].username + '?')) {
+      users.splice(index, 1);
+      localStorage.setItem('users', JSON.stringify(users));
+      loadUsers();
     }
   }
 </script>
