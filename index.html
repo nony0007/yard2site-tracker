@@ -224,8 +224,8 @@ function removeItem(name,size,location) {
 function getMaterialList() {
     let map = {};
     inventory.forEach(i=>{
-        let key = i.name+"|"+i.size;
-        if (!map[key]) map[key]={name:i.name,size:i.size,total:0,bySite:{}};
+        let key=i.name+"|"+i.size;
+        if(!map[key]) map[key]={name:i.name,size:i.size,total:0,bySite:{}};
         map[key].total+=i.qty;
         if(!map[key].bySite[i.location]) map[key].bySite[i.location]=0;
         map[key].bySite[i.location]+=i.qty;
@@ -283,11 +283,68 @@ document.getElementById("add-btn").onclick=()=>{
     if(existing){
         existing.qty+=qty;
     } else {
-        inventory.push({name,size,qty,location:loc,date:"2025-01-01",cost:100,rented:false});
+        inventory.push({
+            name,size,qty,location:loc,
+            date:document.getElementById("add-date").value,
+            cost:parseFloat(document.getElementById("add-cost").value),
+            rented:document.getElementById("add-rented").checked,
+            rentalStart:document.getElementById("add-rental-start").value,
+            rentalRate:parseFloat(document.getElementById("add-rental-rate").value)
+        });
     }
 
     updateInventoryTable();
 };
+
+/* POPULATE SELECTORS */
+function populateSelectors() {
+    let invLoc=document.getElementById("inventory-location");
+    let addLoc=document.getElementById("add-location");
+
+    invLoc.innerHTML=`<option value="">All</option>`;
+    addLoc.innerHTML="";
+
+    locations.forEach(loc=>{
+        invLoc.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+        addLoc.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+    });
+}
+
+/* POPULATE LOCATIONS */
+function populateLocations() {
+    let table=document.getElementById("locations-table");
+    table.innerHTML=`
+<tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th></tr>
+`;
+    locations.forEach(loc=>{
+        table.innerHTML+=`
+<tr>
+<td class="location-link">${loc.name}</td>
+<td>${loc.address}</td>
+<td>${loc.foreman}</td>
+<td>${loc.phone}</td>
+<td>${loc.email}</td>
+</tr>`;
+    });
+}
+
+/* POPULATE USERS */
+function populateUsers() {
+    let table=document.getElementById("users-table");
+    table.innerHTML=`
+<tr><th>Username</th><th>Role</th><th>Location</th><th>Phone</th><th>Email</th></tr>
+`;
+    users.forEach(u=>{
+        table.innerHTML+=`
+<tr>
+<td>${u.username}</td>
+<td>${u.role}</td>
+<td>${u.site}</td>
+<td>${u.phone}</td>
+<td>${u.email}</td>
+</tr>`;
+    });
+}
 
 /* CLICK LOCATION */
 document.addEventListener("click",e=>{
@@ -310,10 +367,14 @@ document.getElementById("login-btn").onclick=()=>{
     let p=document.getElementById("login-pin").value;
     let ok=users.find(x=>x.username===u && x.pin===p);
     if(!ok) return;
+
     document.getElementById("login-screen").style.display="none";
     document.getElementById("inventory-screen").style.display="block";
+
     populateSelectors();
     updateInventoryTable();
+    populateLocations();
+    populateUsers();
 };
 
 /* TAB */
@@ -326,7 +387,10 @@ document.querySelectorAll("nav button").forEach(btn=>{
 
         let id=btn.id.replace("tab-","");
         document.getElementById(id+"-screen").style.display="block";
+
         if(id==="inventory") updateInventoryTable();
+        if(id==="locations") populateLocations();
+        if(id==="users") populateUsers();
     };
 });
 </script>
