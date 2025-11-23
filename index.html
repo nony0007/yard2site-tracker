@@ -4,34 +4,87 @@
 <meta charset="UTF-8">
 <title>Yard2Site Tracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body { font-family: Arial, sans-serif; margin: 0; padding: 0; background:#f2f2f2; }
-header { background:#003366; color:white; padding:15px; font-size:22px; font-weight:bold; }
-nav { background:#0055aa; padding:10px; display:flex; gap:10px; }
-nav button { background:white; border:none; padding:8px 12px; cursor:pointer; border-radius:4px; }
-nav button.active { background:#ffaa00; }
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background:#f2f2f2;
+}
+header {
+    background:#003366;
+    color:white;
+    padding:15px;
+    font-size:24px;
+    font-weight:bold;
+    text-align:center;
+}
+nav {
+    background:#0055aa;
+    padding:10px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+nav button {
+    background:white;
+    border:none;
+    padding:10px 15px;
+    cursor:pointer;
+    border-radius:4px;
+    font-size:16px;
+}
+nav button.active {
+    background:#ffaa00;
+}
+.container {
+    padding:20px;
+}
 
-.container { padding:20px; }
+.screen {
+    display:none;
+}
 
-table { width:100%; border-collapse:collapse; margin-top:15px; background:white; }
-th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    background:white;
+}
+th, td {
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:left;
+    font-size:14px;
+}
 
-input, select { padding:5px; margin:4px; }
+input, select {
+    padding:6px;
+    margin:5px;
+    font-size:14px;
+}
 
-.location-link { color:#0055aa; cursor:pointer; text-decoration:underline; }
+.location-link {
+    color:#0055aa;
+    cursor:pointer;
+    text-decoration:underline;
+}
 
 .autocomplete-list {
     position:absolute;
     background:white;
     border:1px solid #aaa;
-    max-height:150px;
+    max-height:200px;
     overflow-y:auto;
-    width:250px;
+    width:280px;
     z-index:1000;
 }
 .autocomplete-item {
-    padding:5px;
+    padding:6px;
     cursor:pointer;
+    font-size:14px;
 }
 .autocomplete-item:hover {
     background:#ddd;
@@ -44,19 +97,53 @@ input, select { padding:5px; margin:4px; }
     margin-top:5px;
     border-radius:5px;
 }
+.qr-box img {
+    margin-top:10px;
+    border:3px solid #003366;
+}
+
+.button-danger {
+    background:#cc0000;
+    color:white;
+    border:none;
+    padding:6px 10px;
+    cursor:pointer;
+    border-radius:4px;
+}
+.button-danger:hover {
+    background:#aa0000;
+}
+
+.section-title {
+    margin-top:20px;
+    font-size:20px;
+    color:#003366;
+    font-weight:bold;
+}
+
+.offline-box {
+    background:#fff3cd;
+    border:1px solid #ffcc00;
+    padding:10px;
+    border-radius:5px;
+    margin-top:10px;
+}
 </style>
 </head>
+
 <body>
 
-<header>Yard2Site Tracker</header>
+<header>Yard2Site Tracker – Full System</header>
 
 <nav>
 <button id="tab-inventory" class="active">Inventory</button>
 <button id="tab-add">Add Item</button>
+<button id="tab-transfer">Transfer</button>
 <button id="tab-request">Request</button>
-<button id="tab-scan">Scan</button>
+<button id="tab-dockets">Dockets</button>
 <button id="tab-locations">Locations</button>
 <button id="tab-users">Users</button>
+<button id="tab-scan">Scan</button>
 </nav>
 
 <div class="container">
@@ -68,24 +155,34 @@ PIN <input id="login-pin" type="password"><br>
 <button id="login-btn">Login</button>
 </div>
 
-<div id="inventory-screen" style="display:none;">
+<div id="inventory-screen" class="screen">
 <h2>Inventory</h2>
+
 Location
 <select id="inventory-location"></select>
 <label><input type="checkbox" id="hide-zero"> Hide zero stock</label>
 
 <table id="inventory-table">
 <tr>
-<th>Name</th><th>Size</th><th>Qty</th><th>Location</th>
-<th>Acquired</th><th>Cost (€)</th><th>Rented</th>
-<th>Rental start</th><th>Rate/day (€)</th><th>Rental cost (€)</th><th>Actions</th>
+<th>Name</th>
+<th>Size</th>
+<th>Qty</th>
+<th>Location</th>
+<th>Acquired</th>
+<th>Cost (€)</th>
+<th>Rented</th>
+<th>Rental start</th>
+<th>Rate/day (€)</th>
+<th>Rental cost (€)</th>
+<th>Total Value (€)</th>
+<th>Actions</th>
 </tr>
 </table>
 
 <div id="inventory-total"></div>
 </div>
 
-<div id="add-screen" style="display:none;">
+<div id="add-screen" class="screen">
 <h2>Add Item</h2>
 
 Name <input id="add-name" autocomplete="off">
@@ -107,35 +204,68 @@ Location
 <button id="add-btn">Add</button>
 <button id="generate-qr-btn">Generate QR Label</button>
 
-<div id="qr-output"></div>
-</div>
-<div id="request-screen" style="display:none;">
-<h2>Request Item</h2>
-Coming soon...
+<div id="qr-output" class="qr-box"></div>
 </div>
 
-<div id="scan-screen" style="display:none;">
-<h2>Scan QR</h2>
-<input type="file" accept="image/*" capture="camera">
+<div id="transfer-screen" class="screen">
+<h2>Transfer Materials</h2>
+
+From <select id="transfer-from"></select>
+To <select id="transfer-to"></select><br>
+Material <select id="transfer-item"></select>
+Qty <input id="transfer-qty" type="number"><br>
+<button id="transfer-btn">Transfer</button>
+
+<div id="transfer-result"></div>
 </div>
 
-<div id="locations-screen" style="display:none;">
+<div id="request-screen" class="screen">
+<h2>Request Delivery</h2>
+
+Site <select id="request-site"></select><br>
+Material <select id="request-material"></select><br>
+Qty <input id="request-qty" type="number"><br>
+Date needed <input id="request-date" type="date"><br>
+
+<button id="request-btn">Send Request</button>
+<div id="request-result"></div>
+</div>
+
+<div id="dockets-screen" class="screen">
+<h2>Delivery Dockets</h2>
+
+<div class="offline-box">
+If driver has NO INTERNET, generate printable docket here.
+</div>
+
+<button id="generate-docket-btn">Generate Docket</button>
+<div id="docket-output"></div>
+</div>
+
+<div id="locations-screen" class="screen">
 <h2>Locations</h2>
 <table id="locations-table">
 <tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th></tr>
 </table>
 </div>
 
-<div id="users-screen" style="display:none;">
+<div id="users-screen" class="screen">
 <h2>Users</h2>
 <table id="users-table">
 <tr><th>Username</th><th>Role</th><th>Location</th><th>Phone</th><th>Email</th></tr>
 </table>
 </div>
 
+<div id="scan-screen" class="screen">
+<h2>Scan QR</h2>
+<input type="file" accept="image/*" capture="camera">
+<div id="scan-output"></div>
 </div>
 
+</div> <!-- END container -->
+
 <script>
+
 /* RESET & SIMULATION LOAD */
 localStorage.clear();
 
@@ -143,7 +273,8 @@ localStorage.clear();
 let users = [
     {username:"admin", pin:"1234", role:"admin", site:"Main Yard", phone:"0123456789", email:"admin@yard.com"},
     {username:"nony", pin:"1234", role:"foreman", site:"Bennett Lucan Site", phone:"0862222222", email:"nony@lucan.com"},
-    {username:"maria", pin:"1234", role:"foreman", site:"Dublin Hegarty Site", phone:"0853333333", email:"maria@hegarty.com"}
+    {username:"maria", pin:"1234", role:"foreman", site:"Dublin Hegarty Site", phone:"0853333333", email:"maria@hegarty.com"},
+    {username:"michael", pin:"1234", role:"foreman", site:"Yard 2", phone:"0871111111", email:"michael@yard2.com"}
 ];
 
 /* LOCATIONS */
@@ -159,12 +290,21 @@ let inventory = [
     {name:"Doka Frami Panel", size:"90x150", qty:10, location:"Main Yard", date:"2024-01-10", cost:250, rented:false},
     {name:"Doka Frami Panel", size:"90x150", qty:5, location:"Dublin Hegarty Site", date:"2024-01-15", cost:250, rented:false},
     {name:"Doka Frami Panel", size:"75x150", qty:8, location:"Yard 2", date:"2024-01-18", cost:220, rented:false},
+
     {name:"H20 Beam", size:"3.9m", qty:8, location:"Main Yard", date:"2024-01-12", cost:40, rented:false},
     {name:"H20 Beam", size:"3.9m", qty:4, location:"Bennett Lucan Site", date:"2024-01-20", cost:40, rented:false},
+
     {name:"Prop P3", size:"Adjustable", qty:5, location:"Dublin Hegarty Site", date:"2024-01-05", cost:90, rented:true, rentalStart:"2024-02-01", rentalRate:2},
-    {name:"Prop P3", size:"Adjustable", qty:3, location:"Main Yard", date:"2024-01-03", cost:90, rented:true, rentalStart:"2024-02-01", rentalRate:2}
+    {name:"Prop P3", size:"Adjustable", qty:3, location:"Main Yard", date:"2024-01-03", cost:90, rented:true, rentalStart:"2024-02-01", rentalRate:2},
+
+    {name:"Stillage", size:"Large", qty:4, location:"Main Yard", date:"2024-01-03", cost:300, rented:false},
+    {name:"Stillage", size:"Large", qty:2, location:"Yard 2", date:"2024-01-03", cost:300, rented:false},
+
+    {name:"Doka Beam H20", size:"2.45m", qty:12, location:"Main Yard", cost:25},
+    {name:"Peri Trio Panel", size:"270x90", qty:6, location:"Bennett Lucan Site", cost:300}
 ];
 
+/* RENTAL CALC */
 function calculateRental(start, rate) {
     if (!start || !rate) return 0;
     const startDate = new Date(start);
@@ -173,6 +313,7 @@ function calculateRental(start, rate) {
     return days * rate;
 }
 
+/* UPDATE INVENTORY TABLE */
 function updateInventoryTable() {
     let loc = document.getElementById("inventory-location").value;
     let hideZero = document.getElementById("hide-zero").checked;
@@ -180,9 +321,18 @@ function updateInventoryTable() {
     let table = document.getElementById("inventory-table");
     table.innerHTML = `
 <tr>
-<th>Name</th><th>Size</th><th>Qty</th><th>Location</th>
-<th>Acquired</th><th>Cost (€)</th><th>Rented</th>
-<th>Rental start</th><th>Rate/day (€)</th><th>Rental cost (€)</th><th>Actions</th>
+<th>Name</th>
+<th>Size</th>
+<th>Qty</th>
+<th>Location</th>
+<th>Acquired</th>
+<th>Cost (€)</th>
+<th>Rented</th>
+<th>Rental start</th>
+<th>Rate/day (€)</th>
+<th>Rental cost (€)</th>
+<th>Total Value (€)</th>
+<th>Actions</th>
 </tr>`;
 
     let totalValue = 0;
@@ -193,7 +343,9 @@ function updateInventoryTable() {
         if (hideZero && item.qty <= 0) return;
 
         const rentalCost = calculateRental(item.rentalStart, item.rentalRate);
-        totalValue += item.qty * (item.cost || 0);
+        const value = item.qty * (item.cost || 0);
+
+        totalValue += value;
         totalRental += rentalCost;
 
         table.innerHTML += `
@@ -208,36 +360,42 @@ function updateInventoryTable() {
 <td>${item.rentalStart||""}</td>
 <td>${item.rentalRate||""}</td>
 <td>${rentalCost.toFixed(2)}</td>
-<td><button onclick="removeItem('${item.name}','${item.size}','${item.location}')">Remove</button></td>
+<td>${value.toFixed(2)}</td>
+<td><button class="button-danger" onclick="removeItem('${item.name}','${item.size}','${item.location}')">X</button></td>
 </tr>`;
     });
 
     document.getElementById("inventory-total").innerHTML =
         `<h3>Total Value: €${totalValue.toFixed(2)} | Rental Cost: €${totalRental.toFixed(2)}</h3>`;
 }
+
+/* REMOVE ITEM */
 function removeItem(name,size,location) {
     inventory = inventory.filter(i=>!(i.name===name && i.size===size && i.location===location));
     updateInventoryTable();
 }
-
-/* AUTOCOMPLETE */
+/* AUTOCOMPLETE MATERIAL LIST */
 function getMaterialList() {
     let map = {};
     inventory.forEach(i=>{
-        let key=i.name+"|"+i.size;
-        if(!map[key]) map[key]={name:i.name,size:i.size,total:0,bySite:{}};
-        map[key].total+=i.qty;
-        if(!map[key].bySite[i.location]) map[key].bySite[i.location]=0;
+        let key = i.name+"|"+i.size;
+        if (!map[key]) map[key] = {name:i.name,size:i.size,total:0,bySite:{}};
+        map[key].total += i.qty;
+        if (!map[key].bySite[i.location]) map[key].bySite[i.location]=0;
         map[key].bySite[i.location]+=i.qty;
     });
     return map;
 }
 
+/* AUTOCOMPLETE UI */
 document.getElementById("add-name").addEventListener("input",()=>{
     let val=document.getElementById("add-name").value.toLowerCase();
     let list=document.getElementById("autocomplete");
     list.innerHTML="";
-    if(!val){ list.style.display="none"; return;}
+    if(!val){
+        list.style.display="none";
+        return;
+    }
 
     let mats=getMaterialList();
 
@@ -245,11 +403,18 @@ document.getElementById("add-name").addEventListener("input",()=>{
         let full=(m.name+" "+m.size).toLowerCase();
         if(full.includes(val)){
             let sites=Object.entries(m.bySite).map(s=>`${s[0]}:${s[1]}`).join(" / ");
-            list.innerHTML+=`<div class="autocomplete-item" onclick="selectMaterial('${m.name}','${m.size}')">${m.name} ${m.size} – ${m.total} (${sites})</div>`;
+            list.innerHTML+=
+                `<div class="autocomplete-item" onclick="selectMaterial('${m.name}','${m.size}')">
+                ${m.name} ${m.size} – ${m.total} (${sites})
+                </div>`;
         }
     });
 
-    list.innerHTML+=`<div class="autocomplete-item" onclick="newMaterial()">➕ Add new: "${document.getElementById("add-name").value}"</div>`;
+    list.innerHTML+=
+        `<div class="autocomplete-item" onclick="newMaterial()">
+        ➕ Add new: "${document.getElementById("add-name").value}"
+        </div>`;
+
     list.style.display="block";
 });
 
@@ -265,7 +430,8 @@ function selectMaterial(name,size) {
     let here=m.bySite[loc]||0;
 
     document.getElementById("existing-info").style.display="block";
-    document.getElementById("existing-info").innerHTML=`Current at ${loc}: ${here}<br>Total company: ${m.total}`;
+    document.getElementById("existing-info").innerHTML=
+        `Current at ${loc}: ${here}<br>Total company: ${m.total}`;
 }
 
 function newMaterial() {
@@ -273,11 +439,14 @@ function newMaterial() {
     document.getElementById("existing-info").style.display="none";
 }
 
+/* ADD ITEM */
 document.getElementById("add-btn").onclick=()=>{
     let name=document.getElementById("add-name").value;
     let size=document.getElementById("add-size").value;
     let qty=parseInt(document.getElementById("add-qty").value);
     let loc=document.getElementById("add-location").value;
+
+    if(!name || !size || !qty || !loc) return;
 
     let existing=inventory.find(i=>i.name===name && i.size===size && i.location===loc);
     if(existing){
@@ -296,17 +465,98 @@ document.getElementById("add-btn").onclick=()=>{
     updateInventoryTable();
 };
 
+/* TRANSFER ITEMS */
+document.getElementById("transfer-btn").onclick=()=>{
+    let from=document.getElementById("transfer-from").value;
+    let to=document.getElementById("transfer-to").value;
+    let item=document.getElementById("transfer-item").value;
+    let qty=parseInt(document.getElementById("transfer-qty").value);
+
+    if(from===to) return;
+
+    let [name,size]=item.split("|");
+
+    let src=inventory.find(i=>i.name===name && i.size===size && i.location===from);
+    if(!src || src.qty<qty) return;
+
+    src.qty-=qty;
+
+    let dst=inventory.find(i=>i.name===name && i.size===size && i.location===to);
+    if(dst){
+        dst.qty+=qty;
+    } else {
+        inventory.push({name,size,qty,location:to,cost:src.cost});
+    }
+
+    document.getElementById("transfer-result").innerHTML="✅ Transfer Completed";
+    updateInventoryTable();
+};
+
+/* REQUEST DELIVERY */
+document.getElementById("request-btn").onclick=()=>{
+    let site=document.getElementById("request-site").value;
+    let material=document.getElementById("request-material").value;
+    let qty=document.getElementById("request-qty").value;
+
+    document.getElementById("request-result").innerHTML=
+        `✅ Request sent to yard:<br>${qty} x ${material} for ${site}`;
+};
+
+/* DOCKET GENERATOR */
+document.getElementById("generate-docket-btn").onclick=()=>{
+    let html=`
+<h2>Delivery Docket</h2>
+<p>Date: ${new Date().toLocaleDateString()}</p>
+<table border="1">
+<tr><th>Material</th><th>Qty</th></tr>
+`;
+
+    inventory.forEach(i=>{
+        if(i.qty>0)
+            html+=`<tr><td>${i.name} ${i.size}</td><td>${i.qty}</td></tr>`;
+    });
+
+    html+=`</table>`;
+
+    document.getElementById("docket-output").innerHTML=html;
+};
+
+/* QR GENERATOR */
+document.getElementById("generate-qr-btn").onclick=()=>{
+    let text=document.getElementById("add-name").value+" "+document.getElementById("add-size").value;
+    document.getElementById("qr-output").innerHTML=
+        `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}">`;
+};
+
 /* POPULATE SELECTORS */
 function populateSelectors() {
     let invLoc=document.getElementById("inventory-location");
     let addLoc=document.getElementById("add-location");
+    let transferFrom=document.getElementById("transfer-from");
+    let transferTo=document.getElementById("transfer-to");
+    let transferItem=document.getElementById("transfer-item");
+    let reqSite=document.getElementById("request-site");
+    let reqMat=document.getElementById("request-material");
 
     invLoc.innerHTML=`<option value="">All</option>`;
     addLoc.innerHTML="";
+    transferFrom.innerHTML="";
+    transferTo.innerHTML="";
+    transferItem.innerHTML="";
+    reqSite.innerHTML="";
+    reqMat.innerHTML="";
 
     locations.forEach(loc=>{
         invLoc.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
         addLoc.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+        transferFrom.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+        transferTo.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+        reqSite.innerHTML+=`<option value="${loc.name}">${loc.name}</option>`;
+    });
+
+    inventory.forEach(i=>{
+        transferItem.innerHTML+=`<option value="${i.name}|${i.size}">${i.name} ${i.size}</option>`;
+        reqMat.innerHTML+=`<option value="${i.name} ${i.size}">${i.name} ${i.size}</option>`;
     });
 }
 
@@ -314,8 +564,7 @@ function populateSelectors() {
 function populateLocations() {
     let table=document.getElementById("locations-table");
     table.innerHTML=`
-<tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th></tr>
-`;
+<tr><th>Name</th><th>Address</th><th>Foreman</th><th>Phone</th><th>Email</th></tr>`;
     locations.forEach(loc=>{
         table.innerHTML+=`
 <tr>
@@ -332,8 +581,7 @@ function populateLocations() {
 function populateUsers() {
     let table=document.getElementById("users-table");
     table.innerHTML=`
-<tr><th>Username</th><th>Role</th><th>Location</th><th>Phone</th><th>Email</th></tr>
-`;
+<tr><th>Username</th><th>Role</th><th>Location</th><th>Phone</th><th>Email</th></tr>`;
     users.forEach(u=>{
         table.innerHTML+=`
 <tr>
@@ -355,12 +603,6 @@ document.addEventListener("click",e=>{
     }
 });
 
-/* QR */
-document.getElementById("generate-qr-btn").onclick=()=>{
-    let text=document.getElementById("add-name").value+" "+document.getElementById("add-size").value;
-    document.getElementById("qr-output").innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}">`;
-};
-
 /* LOGIN */
 document.getElementById("login-btn").onclick=()=>{
     let u=document.getElementById("login-user").value;
@@ -369,7 +611,7 @@ document.getElementById("login-btn").onclick=()=>{
     if(!ok) return;
 
     document.getElementById("login-screen").style.display="none";
-    document.getElementById("inventory-screen").style.display="block";
+    document.querySelector(".screen").style.display="block";
 
     populateSelectors();
     updateInventoryTable();
@@ -377,13 +619,13 @@ document.getElementById("login-btn").onclick=()=>{
     populateUsers();
 };
 
-/* TAB */
+/* TABS */
 document.querySelectorAll("nav button").forEach(btn=>{
     btn.onclick=()=>{
         document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
         btn.classList.add("active");
 
-        document.querySelectorAll(".container > div").forEach(s=>s.style.display="none");
+        document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
 
         let id=btn.id.replace("tab-","");
         document.getElementById(id+"-screen").style.display="block";
@@ -393,6 +635,7 @@ document.querySelectorAll("nav button").forEach(btn=>{
         if(id==="users") populateUsers();
     };
 });
+
 </script>
 </body>
 </html>
